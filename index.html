@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: -apple-system, sans-serif; padding: 20px; background: #1a1a1a; color: white; text-align: center; }
-        .container { max-width: 500px; margin: auto; background: #2d2d2d; padding: 25px; border-radius: 20px; shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .container { max-width: 500px; margin: auto; background: #2d2d2d; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         h1 { color: #f1c40f; margin-bottom: 5px; }
         .welcome-msg { background: #f39c12; color: black; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
         .btn { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 12px; cursor: pointer; width: 100%; font-size: 18px; font-weight: bold; margin-bottom: 15px; transition: 0.2s; }
@@ -19,6 +19,7 @@
         .match-info { text-align: left; }
         .time { color: #f1c40f; font-size: 20px; font-weight: bold; }
         #game-screen, #start-screen { display: none; }
+        .debug-text { font-size: 0.7em; color: #777; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -28,7 +29,7 @@
     
     <div id="start-screen" style="display: block;">
         <h1>Dutch Open 🎯</h1>
-        <p>Maak je keuze:</p>
+        <p>Kies je toernooi:</p>
         <button class="btn" onclick="startApp('singles')">Single Toernooi</button>
         <button class="btn btn-orange" onclick="startApp('koppels')">Koppel Toernooi</button>
         <button class="btn" style="background:#2980b9" onclick="requestPermission()">🔔 Zet Notificaties Aan</button>
@@ -43,38 +44,39 @@
 </div>
 
 <script>
+    // JOUW LINKS
     const LINKS = {
-        singles: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRywRppeAUw5Lmdx2dJsUaRiFXttSD-tyr_jJPUwridWCTFFbT631wr5z5HmJEvhJsTC5DRYEtaYb5s/pub?gid=0&single=true&output=csv", // Je moet hier de 'gepubliceerd' CSV link van Single plakken
-        koppels: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS6hM_u.../pub?output=csv"  // Je moet hier de 'gepubliceerd' CSV link van Koppel plakken
+        singles: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRywRppeAUw5Lmdx2dJsUaRiFXttSD-tyr_jJPUwridWCTFFbT631wr5z5HmJEvhJsTC5DRYEtaYb5s/pub?gid=0&single=true&output=csv",
+        // Zodra je de koppel link hebt, plak die hieronder tussen de aanhalingstekens:
+        koppels: "KOPPEL_LINK_HIER_PLAKKEN" 
     };
-
-    // VUL HIER DE ECHTE CSV LINKS IN DIE JE HEBT GEGENEREERD
-    const SINGLE_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQfT6qMvM1Xz-B8F-E6N6_6z0yV_fN3G9y-qWp_P4pT_m_8yM-k_uQW_q-0-p9W_q-0/pub?output=csv"; 
-    const KOPPEL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTf6qMvM1Xz-B8F-E6N6_6z0yV_fN3G9y-qWp_P4pT_m_8yM-k_uQW_q-0-p9W_q-0/pub?output=csv";
 
     let currentData = [];
 
     function showWelcome() {
         const nu = new Date();
         const uur = nu.getHours();
-        if (uur >= 6 && uur < 12) {
+        // Begroeting tussen 06:00 en 13:00
+        if (uur >= 6 && uur < 13) {
             document.getElementById('welcome-area').innerHTML = `
                 <div class="welcome-msg">
-                    Goedemorgen mannen! 🍻<br>
-                    Klaar om te knallen op de Dutch Open?<br>
-                    Hoe staat het met de kater? 🤢
+                    Goedemorgen strijders! 🍻<br>
+                    Klaar voor de Dutch Open?<br>
+                    Hoe is de kater? Drink genoeg water! 💧
                 </div>`;
         }
     }
 
     function startApp(type) {
+        const url = LINKS[type];
+        if (!url || url.includes("HIER")) {
+            alert("De link voor " + type + " is nog niet ingesteld!");
+            return;
+        }
+
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
         document.getElementById('toernooi-titel').innerText = type === 'singles' ? "Single Toernooi" : "Koppel Toernooi";
-        
-        const url = type === 'singles' ? 
-            "https://docs.google.com/spreadsheets/d/1yoQTjq7gIe0SVfyw0kyFRGYkbbkHtLzHBaISTCN49KQ/pub?output=csv" : 
-            "https://docs.google.com/spreadsheets/d/1FDn8JbOFgnJNVW26lJs4128qhMKkTghsyiNcCAIkouc/pub?output=csv";
         
         fetchData(url);
     }
@@ -82,18 +84,31 @@
     function showStart() {
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('start-screen').style.display = 'block';
+        currentData = []; // Data resetten bij teruggaan
     }
 
     function fetchData(url) {
         Papa.parse(url, {
             download: true,
-            header: true,
+            header: true, // We gaan ervan uit dat rij 1 koppen heeft
+            skipEmptyLines: true,
             complete: function(results) {
                 currentData = results.data;
                 displayMatches();
                 checkNotifications();
+            },
+            error: function(err) {
+                document.getElementById('results').innerText = "Fout bij laden: " + err;
             }
         });
+    }
+
+    // Slimme functie om de juiste kolom te vinden
+    function findValue(row, possibleKeys) {
+        const keys = Object.keys(row);
+        // Zoek een kolom die lijkt op een van de possibleKeys
+        const match = keys.find(k => possibleKeys.some(pk => k.toLowerCase().includes(pk)));
+        return match ? row[match] : "?";
     }
 
     function displayMatches() {
@@ -101,34 +116,67 @@
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = "";
 
-        const filtered = currentData.filter(row => 
-            row.Speler && row.Speler.toLowerCase().includes(query)
-        );
+        if(currentData.length === 0) {
+            resultsDiv.innerHTML = "Geen data gevonden in sheet.";
+            return;
+        }
 
-        filtered.forEach(match => {
+        // Zoek in ALLE kolommen van een rij naar de naam
+        const filtered = currentData.filter(row => {
+            return Object.values(row).some(val => 
+                String(val).toLowerCase().includes(query)
+            );
+        });
+
+        if(filtered.length === 0 && query.length > 0) {
+            resultsDiv.innerHTML = "Geen wedstrijden gevonden.";
+            return;
+        }
+
+        filtered.forEach(row => {
+            // Probeer slim de tijd en bord te vinden, hoe de kolom ook heet
+            const tijd = findValue(row, ['tijd', 'start', 'aanvang', 'time']);
+            const bord = findValue(row, ['bord', 'baan', 'board']);
+            
+            // Haal de spelersnamen op (gok dat dit de kolommen zijn die NIET tijd of bord zijn)
+            // Of we tonen gewoon de hele rij 'slim'
+            let info = "";
+            Object.keys(row).forEach(k => {
+                const val = row[k];
+                // Laat Tijd en Bord niet dubbel zien in de tekst
+                if (!k.toLowerCase().includes('tijd') && !k.toLowerCase().includes('bord') && val) {
+                   info += val + " ";
+                }
+            });
+
             resultsDiv.innerHTML += `
                 <div class="match-card">
                     <div class="match-info">
-                        <strong>${match.Speler}</strong><br>
-                        <small>Bord ${match.Bord}</small>
+                        <strong>${info}</strong><br>
+                        <small>Bord ${bord}</small>
                     </div>
-                    <div class="time">${match.Tijd}</div>
+                    <div class="time">${tijd}</div>
                 </div>`;
         });
     }
 
     function requestPermission() {
-        Notification.requestPermission().then(perm => { if(perm === "granted") alert("Notificaties actief!"); });
+        Notification.requestPermission().then(perm => { if(perm === "granted") alert("Top! Je krijgt meldingen."); });
     }
 
     function checkNotifications() {
         const nu = new Date();
         const target = new Date(nu.getTime() + 15 * 60000).toLocaleTimeString('nl-NL', {hour: '2-digit', minute:'2-digit'});
         
-        currentData.forEach(match => {
-            if (match.Tijd === target) {
-                new Notification("Tijd om te gooien!", {
-                    body: `${match.Speler}, over 15 min op bord ${match.Bord}!`
+        currentData.forEach(row => {
+            const tijd = findValue(row, ['tijd', 'start', 'aanvang']);
+            const bord = findValue(row, ['bord', 'baan']);
+            
+            // Als de tijd in de sheet (bijv 14:00) gelijk is aan nu + 15 min
+            if (tijd && tijd.includes(target)) {
+                new Notification("🎯 Game On!", {
+                    body: `Over 15 minuten op bord ${bord}!`,
+                    requireInteraction: true
                 });
             }
         });
