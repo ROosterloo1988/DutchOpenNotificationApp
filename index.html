@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dutch Open Darts</title>
+    <title>Dutch Open Darts 2026</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: -apple-system, sans-serif; padding: 20px; background: #1a1a1a; color: white; text-align: center; }
         .container { max-width: 500px; margin: auto; background: #2d2d2d; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         h1 { color: #f1c40f; margin-bottom: 5px; }
+        .date-info { color: #aaa; font-size: 0.9em; margin-bottom: 20px; }
         .welcome-msg { background: #f39c12; color: black; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
         .btn { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 12px; cursor: pointer; width: 100%; font-size: 18px; font-weight: bold; margin-bottom: 15px; transition: 0.2s; }
         .btn:active { transform: scale(0.98); }
@@ -19,18 +20,29 @@
         .match-info { text-align: left; }
         .time { color: #f1c40f; font-size: 20px; font-weight: bold; }
         #game-screen, #start-screen { display: none; }
+        .test-banner { background: #e74c3c; color: white; padding: 5px; font-size: 0.8em; margin-bottom: 10px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div id="test-banner" class="test-banner">⚠️ TEST MODUS ACTIEF: Datums worden genegeerd!</div>
     <div id="welcome-area"></div>
     
     <div id="start-screen" style="display: block;">
         <h1>Dutch Open 🎯</h1>
-        <p>Kies je toernooi:</p>
-        <button class="btn" onclick="startApp('singles')">Single Toernooi</button>
-        <button class="btn btn-orange" onclick="startApp('koppels')">Koppel Toernooi</button>
+        <p class="date-info">6 & 7 Februari 2026</p>
+        
+        <button class="btn btn-orange" onclick="startApp('koppels')">
+            Koppel Toernooi<br>
+            <span style="font-size:0.7em; font-weight:normal;">Vrijdag 6 feb</span>
+        </button>
+        
+        <button class="btn" onclick="startApp('singles')">
+            Single Toernooi<br>
+            <span style="font-size:0.7em; font-weight:normal;">Zaterdag 7 feb</span>
+        </button>
+        
         <button class="btn" style="background:#2980b9" onclick="requestPermission()">🔔 Zet Notificaties Aan</button>
     </div>
 
@@ -43,13 +55,31 @@
 </div>
 
 <script>
-    // DE LINKS NAAR JOUW SHEETS
-    const LINKS = {
-        singles: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIiQL-iNO9bFVNuQpsHJLpIpecZ9qZnQmWHkssBUxyt4FTe5vmjDNdkdNyAs6SyCW9I8ODKPjvecYM/pubhtml?gid=0&single=true",
-        koppels: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRywRppeAUw5Lmdx2dJsUaRiFXttSD-tyr_jJPUwridWCTFFbT631wr5z5HmJEvhJsTC5DRYEtaYb5s/pub?gid=0&single=true&output=csv" // Vergeet deze niet te vullen als je hem hebt!
+    // --- INSTELLINGEN ---
+    
+    // Zet op TRUE om NU te testen (alsof het toernooi vandaag is). 
+    // Zet op FALSE voor de echte werking tijdens het toernooi!
+    const TEST_MODUS = false; 
+
+    const CONFIG = {
+        singles: {
+            url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIiQL-iNO9bFVNuQpsHJLpIpecZ9qZnQmWHkssBUxyt4FTe5vmjDNdkdNyAs6SyCW9I8ODKPjvecYM/pub?gid=0&single=true&output=csv",
+            date: new Date(2026, 1, 7), // 7 Feb 2026 (Maand 1 = Februari)
+            name: "Single Toernooi"
+        },
+        koppels: {
+            url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRywRppeAUw5Lmdx2dJsUaRiFXttSD-tyr_jJPUwridWCTFFbT631wr5z5HmJEvhJsTC5DRYEtaYb5s/pub?gid=0&single=true&output=csv",
+            date: new Date(2026, 1, 6), // 6 Feb 2026
+            name: "Koppel Toernooi"
+        }
     };
 
-    let processedMatches = []; // Hier slaan we de omgezette lijst op
+    let processedMatches = [];
+    let activeTournament = null;
+
+    if (TEST_MODUS) {
+        document.getElementById('test-banner').style.display = 'block';
+    }
 
     function showWelcome() {
         const nu = new Date();
@@ -65,19 +95,138 @@
     }
 
     function startApp(type) {
-        const url = LINKS[type];
-        if (!url || url.includes("HIER")) {
-            alert("De link voor " + type + " is nog niet ingesteld!");
-            return;
-        }
-
+        activeTournament = CONFIG[type];
+        
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
-        document.getElementById('toernooi-titel').innerText = type === 'singles' ? "Single Toernooi" : "Koppel Toernooi";
+        document.getElementById('toernooi-titel').innerText = activeTournament.name;
         
-        fetchData(url);
+        fetchData(activeTournament.url);
     }
 
     function showStart() {
         document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('start
+        document.getElementById('start-screen').style.display = 'block';
+        processedMatches = [];
+        activeTournament = null;
+    }
+
+    function fetchData(url) {
+        Papa.parse(url, {
+            download: true,
+            header: true, 
+            skipEmptyLines: true,
+            complete: function(results) {
+                convertMatrixToList(results.data);
+                displayMatches();
+                checkNotifications();
+            },
+            error: function(err) {
+                document.getElementById('results').innerText = "Fout: " + err;
+            }
+        });
+    }
+
+    function convertMatrixToList(data) {
+        processedMatches = []; 
+        data.forEach(row => {
+            const keys = Object.keys(row);
+            const naamKey = keys[0]; 
+            const naam = row[naamKey];
+
+            if (!naam) return; 
+
+            keys.forEach((key, index) => {
+                if (index === 0) return; 
+                
+                const tijdHeader = key; 
+                const bordNummer = row[key]; 
+
+                // Check op dubbele punt (:) of gewone punt (.) in tijdnotatie
+                if ((tijdHeader.includes(":") || tijdHeader.includes(".")) && bordNummer && bordNummer.trim() !== "") {
+                    // Normaliseer tijd naar HH:MM
+                    const cleanTime = tijdHeader.replace('.', ':');
+                    
+                    processedMatches.push({
+                        speler: naam,
+                        tijd: cleanTime,
+                        bord: bordNummer
+                    });
+                }
+            });
+        });
+    }
+
+    function displayMatches() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = "";
+
+        if(processedMatches.length === 0) {
+            resultsDiv.innerHTML = "Geen wedstrijden gevonden (check data).";
+            return;
+        }
+
+        const filtered = processedMatches.filter(m => m.speler.toLowerCase().includes(query));
+
+        if(filtered.length === 0 && query.length > 0) {
+            resultsDiv.innerHTML = "Geen speler gevonden.";
+            return;
+        }
+
+        filtered.sort((a, b) => a.tijd.localeCompare(b.tijd));
+
+        filtered.forEach(match => {
+            resultsDiv.innerHTML += `
+                <div class="match-card">
+                    <div class="match-info">
+                        <strong>${match.speler}</strong><br>
+                        <small>Bord ${match.bord}</small>
+                    </div>
+                    <div class="time">${match.tijd}</div>
+                </div>`;
+        });
+    }
+
+    function requestPermission() {
+        Notification.requestPermission().then(perm => { if(perm === "granted") alert("Top! Je krijgt meldingen op de wedstrijddag."); });
+    }
+
+    function checkNotifications() {
+        if (!activeTournament) return;
+
+        const nu = new Date();
+        
+        processedMatches.forEach(match => {
+            let matchDate;
+            
+            if (TEST_MODUS) {
+                // In testmodus: datum is vandaag
+                matchDate = new Date(); 
+            } else {
+                // In het echt: datum van het toernooi
+                matchDate = new Date(activeTournament.date);
+            }
+
+            const [hours, minutes] = match.tijd.split(':').map(Number);
+            matchDate.setHours(hours, minutes, 0, 0);
+
+            const diffMs = matchDate - nu;
+            const diffMins = diffMs / 60000;
+
+            if (diffMins > 14.5 && diffMins < 15.5) {
+                new Notification("🎯 Game On!", {
+                    body: `${match.speler}, over 15 min op bord ${match.bord}!`,
+                    requireInteraction: true,
+                    vibrate: [200, 100, 200]
+                });
+            }
+        });
+    }
+
+    showWelcome();
+    setInterval(checkNotifications, 30000);
+</script>
+
+</body>
+</html>
