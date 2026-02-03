@@ -451,6 +451,77 @@
     setInterval(checkNotifications, 30000);
 </script>
 
+<div id="update-notification" class="update-toast hidden">
+    <div style="flex:1;">
+        <strong>Update beschikbaar! 🚀</strong><br>
+        <span style="font-size:0.8rem;">Nieuwe versie installeren?</span>
+    </div>
+    <button class="btn-update" onclick="updateApp()">Update Nu</button>
+</div>
+
+<style>
+    /* Styling voor de update balk */
+    .update-toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        border: 1px solid #FF6600;
+        color: white;
+        padding: 15px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        z-index: 1000;
+        width: 90%;
+        max-width: 400px;
+        animation: slideUp 0.5s ease;
+    }
+    .hidden { display: none !important; }
+    .btn-update {
+        background: #FF6600;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    let newWorker;
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js').then(reg => {
+            reg.addEventListener('updatefound', () => {
+                newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // Er is een nieuwe versie klaar en we hebben al een oude versie draaien
+                        document.getElementById('update-notification').classList.remove('hidden');
+                    }
+                });
+            });
+        });
+
+        let refreshing;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            window.location.reload();
+            refreshing = true;
+        });
+    }
+
+    function updateApp() {
+        if (newWorker) {
+            newWorker.postMessage({ action: 'skipWaiting' });
+        }
+    }
+</script>
 
 
 </body>
