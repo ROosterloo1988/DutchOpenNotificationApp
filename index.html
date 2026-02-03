@@ -232,7 +232,7 @@
         <div id="results"></div>
     </div>
 </div>
-
+    
 <script>
     /* ==========================================
        🛠️ JAAR INSTELLINGEN
@@ -243,10 +243,10 @@
         koppels: { dag: 6, maand: 1 }  // 1 = Februari
     };
 
-    const TEST_MODUS = false; // Zet op TRUE om vandaag te testen
+    const TEST_MODUS = false; 
 
     /* ==========================================
-       🔗 LINKS NAAR JOUW SHEETS
+       🔗 LINKS
        ========================================== */
     const LINKS = {
         singles: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIiQL-iNO9bFVNuQpsHJLpIpecZ9qZnQmWHkssBUxyt4FTe5vmjDNdkdNyAs6SyCW9I8ODKPjvecYM/pub?gid=0&single=true&output=csv",
@@ -254,10 +254,11 @@
     };
 
     /* ==========================================
-       🚀 APP LOGICA
+       🚀 INTELLIGENTE APP LOGICA
        ========================================== */
     let processedMatches = [];
     let activeTournament = null;
+    let isDataFresh = false; // Beveiliging tegen oude meldingen
 
     const DATE_SINGLES = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.singles.maand, JAAR_INSTELLINGEN.singles.dag);
     const DATE_KOPPELS = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.koppels.maand, JAAR_INSTELLINGEN.koppels.dag);
@@ -266,6 +267,16 @@
     document.getElementById('lbl-koppels').innerText = DATE_KOPPELS.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
 
     if (TEST_MODUS) document.getElementById('test-banner').style.display = 'block';
+
+    // --- 1. SLIMME WAKE-UP FUNCTIE ---
+    // Zodra de app zichtbaar wordt (je opent hem), direct verversen!
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && activeTournament) {
+            console.log("App geopend: Data verversen...");
+            isDataFresh = false; // Blokkeer notificaties even
+            fetchData(activeTournament.url);
+        }
+    });
 
     function showWelcome() {
         const nu = new Date();
@@ -304,18 +315,23 @@
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('start-screen').style.display = 'block';
         processedMatches = [];
+        activeTournament = null;
         document.getElementById('results').innerHTML = "";
         document.getElementById('searchInput').value = "";
     }
 
     function fetchData(url) {
-        document.getElementById('results').innerHTML = "<div class='empty-msg'>Gegevens laden...</div>";
+        // Laat zien dat we laden (klein draaiend icoontje zou mooi zijn, maar tekst werkt ook)
+        const resDiv = document.getElementById('results');
+        if (resDiv.innerHTML === "") resDiv.innerHTML = "<div class='empty-msg'>Gegevens laden...</div>";
+        
         Papa.parse(url, {
             download: true, header: true, skipEmptyLines: true,
             complete: function(results) {
                 convertMatrixToList(results.data);
+                isDataFresh = true; // Nu mogen we weer notificeren!
                 displayMatches();
-                checkNotifications();
+                // We checken niet direct notifications, want misschien is de match net verwijderd
             },
             error: function() {
                 document.getElementById('results').innerHTML = "<div class='empty-msg'>Fout bij laden data.</div>";
@@ -356,7 +372,7 @@
             let matchDate = TEST_MODUS ? new Date() : new Date(activeTournament.date);
             const [hours, minutes] = match.tijd.split(':').map(Number);
             matchDate.setHours(hours, minutes, 0, 0);
-            const vervalTijd = new Date(matchDate.getTime() + 15 * 60000); // 15 min na start weg
+            const vervalTijd = new Date(matchDate.getTime() + 15 * 60000); 
             return matchesName && nu < vervalTijd;
         });
 
@@ -387,13 +403,16 @@
     }
 
     function checkNotifications() {
-        if (!activeTournament) return;
+        // ALLEEN notificeren als de app actief is én de data vers is
+        if (!activeTournament || !isDataFresh) return;
+        
         const nu = new Date();
         processedMatches.forEach(match => {
             let matchDate = TEST_MODUS ? new Date() : new Date(activeTournament.date);
             const [hours, minutes] = match.tijd.split(':').map(Number);
             matchDate.setHours(hours, minutes, 0, 0);
             const diffMins = (matchDate - nu) / 60000;
+
             if (diffMins > 14.5 && diffMins < 15.5) {
                 new Notification("🎯 Game On!", {
                     body: `${match.speler}, over 15 min op bord ${match.bord}!`,
@@ -405,9 +424,16 @@
     }
 
     showWelcome();
-    setInterval(displayMatches, 60000); 
+    // Interval voor als de app open blijft staan (bijv. op tafel)
+    setInterval(() => {
+        if(activeTournament) fetchData(activeTournament.url);
+    }, 60000); // Elke minuut verversen
+    
+    // Check notifications vaker, maar hij doet het alleen als data vers is
     setInterval(checkNotifications, 30000);
 </script>
+
+
 
 </body>
 </html>
