@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dutch Open Darts Tracker</title>
+    <title>Dutch Open Darts</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: -apple-system, sans-serif; padding: 20px; background: #1a1a1a; color: white; text-align: center; }
@@ -19,7 +19,6 @@
         .match-info { text-align: left; }
         .time { color: #f1c40f; font-size: 20px; font-weight: bold; }
         #game-screen, #start-screen { display: none; }
-        .debug-text { font-size: 0.7em; color: #777; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -44,19 +43,17 @@
 </div>
 
 <script>
-    // JOUW LINKS
+    // DE LINKS NAAR JOUW SHEETS
     const LINKS = {
         singles: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRywRppeAUw5Lmdx2dJsUaRiFXttSD-tyr_jJPUwridWCTFFbT631wr5z5HmJEvhJsTC5DRYEtaYb5s/pub?gid=0&single=true&output=csv",
-        // Zodra je de koppel link hebt, plak die hieronder tussen de aanhalingstekens:
-        koppels: "KOPPEL_LINK_HIER_PLAKKEN" 
+        koppels: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRywRppeAUw5Lmdx2dJsUaRiFXttSD-tyr_jJPUwridWCTFFbT631wr5z5HmJEvhJsTC5DRYEtaYb5s/pub?gid=0&single=true&output=csv" // Vergeet deze niet te vullen als je hem hebt!
     };
 
-    let currentData = [];
+    let processedMatches = []; // Hier slaan we de omgezette lijst op
 
     function showWelcome() {
         const nu = new Date();
         const uur = nu.getHours();
-        // Begroeting tussen 06:00 en 13:00
         if (uur >= 6 && uur < 13) {
             document.getElementById('welcome-area').innerHTML = `
                 <div class="welcome-msg">
@@ -83,108 +80,4 @@
 
     function showStart() {
         document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('start-screen').style.display = 'block';
-        currentData = []; // Data resetten bij teruggaan
-    }
-
-    function fetchData(url) {
-        Papa.parse(url, {
-            download: true,
-            header: true, // We gaan ervan uit dat rij 1 koppen heeft
-            skipEmptyLines: true,
-            complete: function(results) {
-                currentData = results.data;
-                displayMatches();
-                checkNotifications();
-            },
-            error: function(err) {
-                document.getElementById('results').innerText = "Fout bij laden: " + err;
-            }
-        });
-    }
-
-    // Slimme functie om de juiste kolom te vinden
-    function findValue(row, possibleKeys) {
-        const keys = Object.keys(row);
-        // Zoek een kolom die lijkt op een van de possibleKeys
-        const match = keys.find(k => possibleKeys.some(pk => k.toLowerCase().includes(pk)));
-        return match ? row[match] : "?";
-    }
-
-    function displayMatches() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "";
-
-        if(currentData.length === 0) {
-            resultsDiv.innerHTML = "Geen data gevonden in sheet.";
-            return;
-        }
-
-        // Zoek in ALLE kolommen van een rij naar de naam
-        const filtered = currentData.filter(row => {
-            return Object.values(row).some(val => 
-                String(val).toLowerCase().includes(query)
-            );
-        });
-
-        if(filtered.length === 0 && query.length > 0) {
-            resultsDiv.innerHTML = "Geen wedstrijden gevonden.";
-            return;
-        }
-
-        filtered.forEach(row => {
-            // Probeer slim de tijd en bord te vinden, hoe de kolom ook heet
-            const tijd = findValue(row, ['tijd', 'start', 'aanvang', 'time']);
-            const bord = findValue(row, ['bord', 'baan', 'board']);
-            
-            // Haal de spelersnamen op (gok dat dit de kolommen zijn die NIET tijd of bord zijn)
-            // Of we tonen gewoon de hele rij 'slim'
-            let info = "";
-            Object.keys(row).forEach(k => {
-                const val = row[k];
-                // Laat Tijd en Bord niet dubbel zien in de tekst
-                if (!k.toLowerCase().includes('tijd') && !k.toLowerCase().includes('bord') && val) {
-                   info += val + " ";
-                }
-            });
-
-            resultsDiv.innerHTML += `
-                <div class="match-card">
-                    <div class="match-info">
-                        <strong>${info}</strong><br>
-                        <small>Bord ${bord}</small>
-                    </div>
-                    <div class="time">${tijd}</div>
-                </div>`;
-        });
-    }
-
-    function requestPermission() {
-        Notification.requestPermission().then(perm => { if(perm === "granted") alert("Top! Je krijgt meldingen."); });
-    }
-
-    function checkNotifications() {
-        const nu = new Date();
-        const target = new Date(nu.getTime() + 15 * 60000).toLocaleTimeString('nl-NL', {hour: '2-digit', minute:'2-digit'});
-        
-        currentData.forEach(row => {
-            const tijd = findValue(row, ['tijd', 'start', 'aanvang']);
-            const bord = findValue(row, ['bord', 'baan']);
-            
-            // Als de tijd in de sheet (bijv 14:00) gelijk is aan nu + 15 min
-            if (tijd && tijd.includes(target)) {
-                new Notification("🎯 Game On!", {
-                    body: `Over 15 minuten op bord ${bord}!`,
-                    requireInteraction: true
-                });
-            }
-        });
-    }
-
-    showWelcome();
-    setInterval(checkNotifications, 60000);
-</script>
-
-</body>
-</html>
+        document.getElementById('start
