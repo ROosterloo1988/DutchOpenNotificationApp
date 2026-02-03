@@ -2,104 +2,300 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dutch Open Darts 2026</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dutch Open Darts Tracker</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3068/3068351.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 20px; background: #1a1a1a; color: white; text-align: center; }
-        .container { max-width: 500px; margin: auto; background: #2d2d2d; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { color: #f1c40f; margin-bottom: 5px; }
-        .date-info { color: #aaa; font-size: 0.9em; margin-bottom: 20px; }
-        .welcome-msg { background: #f39c12; color: black; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
-        .btn { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 12px; cursor: pointer; width: 100%; font-size: 18px; font-weight: bold; margin-bottom: 15px; transition: 0.2s; }
-        .btn:active { transform: scale(0.98); }
-        .btn-orange { background: #e67e22; }
-        .btn-back { background: #7f8c8d; margin-top: 20px; }
-        input { width: 100%; padding: 15px; margin: 15px 0; border-radius: 10px; border: none; font-size: 16px; box-sizing: border-box; }
-        .match-card { background: #3d3d3d; padding: 15px; margin: 10px 0; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #f1c40f; }
-        .match-info { text-align: left; }
-        .time { color: #f1c40f; font-size: 20px; font-weight: bold; }
+        :root {
+            --primary: #FF6600; /* Dutch Orange */
+            --dark: #121212;
+            --card-bg: #1E1E1E;
+            --text-main: #FFFFFF;
+            --text-muted: #A0A0A0;
+            --gradient: linear-gradient(135deg, #FF6600 0%, #FF8533 100%);
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- HEADER & LOGO --- */
+        .app-header {
+            background: linear-gradient(to bottom, #1a1a1a, #0d0d0d);
+            padding: 25px 20px 15px;
+            text-align: center;
+            border-bottom: 3px solid var(--primary);
+            box-shadow: 0 4px 25px rgba(255, 102, 0, 0.25);
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo-img {
+            max-width: 220px; /* Grootte van het logo */
+            height: auto;
+            display: block;
+            margin: 0 auto 5px;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));
+        }
+
+        .subtitle {
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.9;
+        }
+
+        /* --- CONTAINER --- */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* --- WELCOME CARD --- */
+        .welcome-card {
+            background: rgba(255, 102, 0, 0.1);
+            border: 1px solid rgba(255, 102, 0, 0.3);
+            color: #fff;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+            animation: fadeIn 0.8s ease;
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: none;
+            border-radius: 15px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 800;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        .btn:active { transform: scale(0.96); }
+
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 8px 20px rgba(255, 102, 0, 0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .btn-secondary {
+            background: #2C2C2C;
+            color: white;
+            font-size: 0.9rem;
+            padding: 12px;
+            border: 1px solid #444;
+        }
+        
+        .btn-notify {
+            background: transparent;
+            border: 2px solid #00A8FF;
+            color: #00A8FF;
+            font-size: 0.9rem;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-date {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-top: 5px;
+            text-transform: none;
+        }
+
+        /* --- INPUT --- */
+        .search-wrapper { position: relative; margin-bottom: 20px; }
+        
+        input {
+            width: 100%;
+            padding: 18px;
+            background: var(--card-bg);
+            border: 2px solid #333;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+            transition: 0.3s;
+        }
+        input:focus { outline: none; border-color: var(--primary); background: #252525; }
+
+        /* --- MATCH CARDS --- */
+        .match-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            animation: slideUp 0.4s ease forwards;
+            opacity: 0;
+        }
+
+        .match-info strong { display: block; font-size: 1.15rem; margin-bottom: 4px; color: #fff; }
+        .match-info small { color: var(--primary); text-transform: uppercase; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; }
+
+        .time-badge {
+            background: #333;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-weight: 900;
+            color: #fff;
+            font-size: 1.3rem;
+            min-width: 60px;
+            text-align: center;
+            border: 1px solid #444;
+        }
+
+        /* --- UTILS --- */
         #game-screen, #start-screen { display: none; }
-        .test-banner { background: #e74c3c; color: white; padding: 5px; font-size: 0.8em; margin-bottom: 10px; display: none; }
-        .empty-msg { color: #7f8c8d; font-style: italic; margin-top: 20px; }
+        .test-banner { background: #E74C3C; color: white; text-align: center; padding: 5px; font-size: 0.8rem; font-weight: bold; }
+        .empty-msg { text-align: center; color: var(--text-muted); margin-top: 40px; font-style: italic; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .match-card:nth-child(1) { animation-delay: 0.1s; }
+        .match-card:nth-child(2) { animation-delay: 0.15s; }
+        .match-card:nth-child(3) { animation-delay: 0.2s; }
     </style>
 </head>
 <body>
 
+<div class="app-header">
+    <img src="https://dutchopendarts.nl/wp-content/uploads/2021/10/Logo-Dutch-Open-Darts.png" alt="Dutch Open Logo" class="logo-img">
+    <div class="subtitle">Official Team Tracker</div>
+</div>
+
+<div id="test-banner" class="test-banner" style="display:none;">⚠️ TEST MODUS: VANDAAG</div>
+
 <div class="container">
-    <div id="test-banner" class="test-banner">⚠️ TEST MODUS ACTIEF: Datums worden genegeerd!</div>
     <div id="welcome-area"></div>
     
     <div id="start-screen" style="display: block;">
-        <h1>Dutch Open 🎯</h1>
-        <p class="date-info">6 & 7 Februari 2026</p>
+        <p style="text-align:center; color:#777; margin-bottom:30px;">Selecteer je toernooi:</p>
         
-        <button class="btn btn-orange" onclick="startApp('koppels')">
-            Koppel Toernooi<br>
-            <span style="font-size:0.7em; font-weight:normal;">Vrijdag 6 feb</span>
+        <button class="btn btn-primary" onclick="startApp('koppels')">
+            Koppel Toernooi
+            <span class="btn-date" id="lbl-koppels">Laden...</span>
         </button>
         
-        <button class="btn" onclick="startApp('singles')">
-            Single Toernooi<br>
-            <span style="font-size:0.7em; font-weight:normal;">Zaterdag 7 feb</span>
+        <button class="btn btn-primary" onclick="startApp('singles')">
+            Single Toernooi
+            <span class="btn-date" id="lbl-singles">Laden...</span>
         </button>
         
-        <button class="btn" style="background:#2980b9" onclick="requestPermission()">🔔 Zet Notificaties Aan</button>
+        <button class="btn btn-notify" onclick="requestPermission()">
+            🔔 Meldingen Aanzetten
+        </button>
+        
+        <p style="text-align:center; font-size:0.7em; color:#444; margin-top:40px;">Made for Champions 🏆</p>
     </div>
 
     <div id="game-screen">
-        <h2 id="toernooi-titel">Laden...</h2>
-        <input type="text" id="searchInput" placeholder="Zoek op naam..." oninput="displayMatches()">
-        <div id="results">Data ophalen...</div>
-        <button class="btn btn-back" onclick="showStart()">⬅️ Terug naar menu</button>
+        <button class="btn btn-secondary" style="margin-bottom: 20px;" onclick="showStart()">
+            ⬅️ Terug naar Menu
+        </button>
+
+        <h2 id="toernooi-titel" style="color:white; margin: 0; font-size:1.5rem;">Toernooi</h2>
+        <div id="toernooi-datum" style="color:var(--primary); font-size:0.9rem; margin-bottom:20px; font-weight:bold; text-transform:uppercase;">Datum</div>
+
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" placeholder="🔍 Zoek op naam..." oninput="displayMatches()">
+        </div>
+
+        <div id="results"></div>
     </div>
 </div>
 
 <script>
-    // --- INSTELLINGEN ---
-    
-    // Zet op TRUE om NU te testen. Zet op FALSE voor het echte toernooi.
-    const TEST_MODUS = false; 
-
-    const CONFIG = {
-        singles: {
-            url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIiQL-iNO9bFVNuQpsHJLpIpecZ9qZnQmWHkssBUxyt4FTe5vmjDNdkdNyAs6SyCW9I8ODKPjvecYM/pub?gid=0&single=true&output=csv",
-            date: new Date(2026, 1, 7), // 7 Feb 2026
-            name: "Single Toernooi"
-        },
-        koppels: {
-            url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRywRppeAUw5Lmdx2dJsUaRiFXttSD-tyr_jJPUwridWCTFFbT631wr5z5HmJEvhJsTC5DRYEtaYb5s/pub?gid=0&single=true&output=csv",
-            date: new Date(2026, 1, 6), // 6 Feb 2026
-            name: "Koppel Toernooi"
-        }
+    /* ==========================================
+       🛠️ JAAR INSTELLINGEN
+       ========================================== */
+    const JAAR_INSTELLINGEN = {
+        jaar: 2026,
+        singles: { dag: 7, maand: 1 }, // 1 = Februari
+        koppels: { dag: 6, maand: 1 }  // 1 = Februari
     };
 
+    const TEST_MODUS = false; // Zet op TRUE om vandaag te testen
+
+    /* ==========================================
+       🔗 LINKS NAAR JOUW SHEETS
+       ========================================== */
+    const LINKS = {
+        singles: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIiQL-iNO9bFVNuQpsHJLpIpecZ9qZnQmWHkssBUxyt4FTe5vmjDNdkdNyAs6SyCW9I8ODKPjvecYM/pub?gid=0&single=true&output=csv",
+        koppels: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRywRppeAUw5Lmdx2dJsUaRiFXttSD-tyr_jJPUwridWCTFFbT631wr5z5HmJEvhJsTC5DRYEtaYb5s/pub?gid=0&single=true&output=csv"
+    };
+
+    /* ==========================================
+       🚀 APP LOGICA
+       ========================================== */
     let processedMatches = [];
     let activeTournament = null;
 
-    if (TEST_MODUS) {
-        document.getElementById('test-banner').style.display = 'block';
-    }
+    const DATE_SINGLES = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.singles.maand, JAAR_INSTELLINGEN.singles.dag);
+    const DATE_KOPPELS = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.koppels.maand, JAAR_INSTELLINGEN.koppels.dag);
+
+    document.getElementById('lbl-singles').innerText = DATE_SINGLES.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
+    document.getElementById('lbl-koppels').innerText = DATE_KOPPELS.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
+
+    if (TEST_MODUS) document.getElementById('test-banner').style.display = 'block';
 
     function showWelcome() {
         const nu = new Date();
         const uur = nu.getHours();
         if (uur >= 6 && uur < 13) {
             document.getElementById('welcome-area').innerHTML = `
-                <div class="welcome-msg">
-                    Goedemorgen strijders! 🍻<br>
-                    Klaar voor de Dutch Open?<br>
-                    Hoe is de kater? Drink genoeg water! 💧
+                <div class="welcome-card">
+                    <div style="font-size:1.8rem; margin-bottom:5px;">🍻</div>
+                    <strong>Goedemorgen strijders!</strong><br>
+                    <span style="font-size:0.9rem; opacity:0.8;">Hoe is de kater? Drink genoeg water! 💧</span>
                 </div>`;
         }
     }
 
     function startApp(type) {
-        activeTournament = CONFIG[type];
-        
+        let selectedDate = type === 'singles' ? DATE_SINGLES : DATE_KOPPELS;
+        let selectedUrl = LINKS[type];
+        let title = type === 'singles' ? "Single Toernooi" : "Koppel Toernooi";
+
+        activeTournament = { name: title, date: selectedDate, url: selectedUrl };
+
+        if (!selectedUrl || selectedUrl.includes("HIER")) {
+            alert("⚠️ Link nog niet ingesteld!"); return;
+        }
+
         document.getElementById('start-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
-        document.getElementById('toernooi-titel').innerText = activeTournament.name;
+        
+        document.getElementById('toernooi-titel').innerText = title;
+        document.getElementById('toernooi-datum').innerText = selectedDate.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
         
         fetchData(activeTournament.url);
     }
@@ -108,10 +304,12 @@
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('start-screen').style.display = 'block';
         processedMatches = [];
-        activeTournament = null;
+        document.getElementById('results').innerHTML = "";
+        document.getElementById('searchInput').value = "";
     }
 
     function fetchData(url) {
+        document.getElementById('results').innerHTML = "<div class='empty-msg'>Gegevens laden...</div>";
         Papa.parse(url, {
             download: true, header: true, skipEmptyLines: true,
             complete: function(results) {
@@ -119,8 +317,8 @@
                 displayMatches();
                 checkNotifications();
             },
-            error: function(err) {
-                document.getElementById('results').innerText = "Fout: " + err;
+            error: function() {
+                document.getElementById('results').innerHTML = "<div class='empty-msg'>Fout bij laden data.</div>";
             }
         });
     }
@@ -129,13 +327,87 @@
         processedMatches = []; 
         data.forEach(row => {
             const keys = Object.keys(row);
-            const naamKey = keys[0]; 
-            const naam = row[naamKey];
+            const naam = row[keys[0]]; 
             if (!naam) return; 
-
             keys.forEach((key, index) => {
                 if (index === 0) return; 
                 const tijdHeader = key; 
                 const bordNummer = row[key]; 
+                if ((tijdHeader.includes(":") || tijdHeader.includes(".")) && bordNummer && bordNummer.trim() !== "") {
+                    const cleanTime = tijdHeader.replace('.', ':');
+                    processedMatches.push({ speler: naam, tijd: cleanTime, bord: bordNummer });
+                }
+            });
+        });
+    }
 
-                if ((tijdHeader.includes(":") || tijdHeader.includes(".")) && bordNum
+    function displayMatches() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = "";
+
+        if(processedMatches.length === 0) {
+            resultsDiv.innerHTML = "<div class='empty-msg'>Geen wedstrijden gevonden.</div>"; return;
+        }
+
+        const nu = new Date();
+        const filtered = processedMatches.filter(match => {
+            const matchesName = match.speler.toLowerCase().includes(query);
+            let matchDate = TEST_MODUS ? new Date() : new Date(activeTournament.date);
+            const [hours, minutes] = match.tijd.split(':').map(Number);
+            matchDate.setHours(hours, minutes, 0, 0);
+            const vervalTijd = new Date(matchDate.getTime() + 15 * 60000); // 15 min na start weg
+            return matchesName && nu < vervalTijd;
+        });
+
+        if(filtered.length === 0) {
+            resultsDiv.innerHTML = query.length > 0 ? "<div class='empty-msg'>Geen speler gevonden.</div>" : "<div class='empty-msg'>Alles gespeeld! Tijd voor bier. 🍺</div>";
+            return;
+        }
+
+        filtered.sort((a, b) => a.tijd.localeCompare(b.tijd));
+
+        filtered.forEach(match => {
+            resultsDiv.innerHTML += `
+                <div class="match-card">
+                    <div class="match-info">
+                        <strong>${match.speler}</strong>
+                        <small>Bord ${match.bord}</small>
+                    </div>
+                    <div class="time-badge">${match.tijd}</div>
+                </div>`;
+        });
+    }
+
+    function requestPermission() {
+        Notification.requestPermission().then(perm => { 
+            if(perm === "granted") alert("✅ Meldingen staan aan!"); 
+            else alert("⚠️ Meldingen zijn geblokkeerd.");
+        });
+    }
+
+    function checkNotifications() {
+        if (!activeTournament) return;
+        const nu = new Date();
+        processedMatches.forEach(match => {
+            let matchDate = TEST_MODUS ? new Date() : new Date(activeTournament.date);
+            const [hours, minutes] = match.tijd.split(':').map(Number);
+            matchDate.setHours(hours, minutes, 0, 0);
+            const diffMins = (matchDate - nu) / 60000;
+            if (diffMins > 14.5 && diffMins < 15.5) {
+                new Notification("🎯 Game On!", {
+                    body: `${match.speler}, over 15 min op bord ${match.bord}!`,
+                    requireInteraction: true,
+                    vibrate: [200, 100, 200]
+                });
+            }
+        });
+    }
+
+    showWelcome();
+    setInterval(displayMatches, 60000); 
+    setInterval(checkNotifications, 30000);
+</script>
+
+</body>
+</html>
