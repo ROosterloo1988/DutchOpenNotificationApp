@@ -21,6 +21,7 @@
         .time { color: #f1c40f; font-size: 20px; font-weight: bold; }
         #game-screen, #start-screen { display: none; }
         .test-banner { background: #e74c3c; color: white; padding: 5px; font-size: 0.8em; margin-bottom: 10px; display: none; }
+        .empty-msg { color: #7f8c8d; font-style: italic; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -57,14 +58,13 @@
 <script>
     // --- INSTELLINGEN ---
     
-    // Zet op TRUE om NU te testen (alsof het toernooi vandaag is). 
-    // Zet op FALSE voor de echte werking tijdens het toernooi!
+    // Zet op TRUE om NU te testen. Zet op FALSE voor het echte toernooi.
     const TEST_MODUS = false; 
 
     const CONFIG = {
         singles: {
             url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIiQL-iNO9bFVNuQpsHJLpIpecZ9qZnQmWHkssBUxyt4FTe5vmjDNdkdNyAs6SyCW9I8ODKPjvecYM/pub?gid=0&single=true&output=csv",
-            date: new Date(2026, 1, 7), // 7 Feb 2026 (Maand 1 = Februari)
+            date: new Date(2026, 1, 7), // 7 Feb 2026
             name: "Single Toernooi"
         },
         koppels: {
@@ -113,9 +113,7 @@
 
     function fetchData(url) {
         Papa.parse(url, {
-            download: true,
-            header: true, 
-            skipEmptyLines: true,
+            download: true, header: true, skipEmptyLines: true,
             complete: function(results) {
                 convertMatrixToList(results.data);
                 displayMatches();
@@ -133,100 +131,11 @@
             const keys = Object.keys(row);
             const naamKey = keys[0]; 
             const naam = row[naamKey];
-
             if (!naam) return; 
 
             keys.forEach((key, index) => {
                 if (index === 0) return; 
-                
                 const tijdHeader = key; 
                 const bordNummer = row[key]; 
 
-                // Check op dubbele punt (:) of gewone punt (.) in tijdnotatie
-                if ((tijdHeader.includes(":") || tijdHeader.includes(".")) && bordNummer && bordNummer.trim() !== "") {
-                    // Normaliseer tijd naar HH:MM
-                    const cleanTime = tijdHeader.replace('.', ':');
-                    
-                    processedMatches.push({
-                        speler: naam,
-                        tijd: cleanTime,
-                        bord: bordNummer
-                    });
-                }
-            });
-        });
-    }
-
-    function displayMatches() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "";
-
-        if(processedMatches.length === 0) {
-            resultsDiv.innerHTML = "Geen wedstrijden gevonden (check data).";
-            return;
-        }
-
-        const filtered = processedMatches.filter(m => m.speler.toLowerCase().includes(query));
-
-        if(filtered.length === 0 && query.length > 0) {
-            resultsDiv.innerHTML = "Geen speler gevonden.";
-            return;
-        }
-
-        filtered.sort((a, b) => a.tijd.localeCompare(b.tijd));
-
-        filtered.forEach(match => {
-            resultsDiv.innerHTML += `
-                <div class="match-card">
-                    <div class="match-info">
-                        <strong>${match.speler}</strong><br>
-                        <small>Bord ${match.bord}</small>
-                    </div>
-                    <div class="time">${match.tijd}</div>
-                </div>`;
-        });
-    }
-
-    function requestPermission() {
-        Notification.requestPermission().then(perm => { if(perm === "granted") alert("Top! Je krijgt meldingen op de wedstrijddag."); });
-    }
-
-    function checkNotifications() {
-        if (!activeTournament) return;
-
-        const nu = new Date();
-        
-        processedMatches.forEach(match => {
-            let matchDate;
-            
-            if (TEST_MODUS) {
-                // In testmodus: datum is vandaag
-                matchDate = new Date(); 
-            } else {
-                // In het echt: datum van het toernooi
-                matchDate = new Date(activeTournament.date);
-            }
-
-            const [hours, minutes] = match.tijd.split(':').map(Number);
-            matchDate.setHours(hours, minutes, 0, 0);
-
-            const diffMs = matchDate - nu;
-            const diffMins = diffMs / 60000;
-
-            if (diffMins > 14.5 && diffMins < 15.5) {
-                new Notification("🎯 Game On!", {
-                    body: `${match.speler}, over 15 min op bord ${match.bord}!`,
-                    requireInteraction: true,
-                    vibrate: [200, 100, 200]
-                });
-            }
-        });
-    }
-
-    showWelcome();
-    setInterval(checkNotifications, 30000);
-</script>
-
-</body>
-</html>
+                if ((tijdHeader.includes(":") || tijdHeader.includes(".")) && bordNum
