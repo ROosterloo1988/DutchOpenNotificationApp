@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Darts Tracker Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body { font-family: -apple-system, sans-serif; padding: 20px; background: #f4f7f6; color: #2c3e50; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: #2ecc71; text-align: center; margin-bottom: 5px; }
+        .subtitle { text-align: center; font-size: 0.9em; color: #7f8c8d; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        .match-card { border-left: 5px solid #2ecc71; background: #f9fffb; padding: 15px; margin: 10px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .btn { background: #2ecc71; color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
+        .btn-settings { background: #95a5a6; font-size: 0.8em; margin-top: 20px; }
+        .btn-danger { background: #e74c3c; margin-top: 5px; }
+        #settings-section { display: none; border-top: 2px dashed #eee; margin-top: 20px; padding-top: 20px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎯 Darts Tracker</h1>
+    <p class="subtitle">Dutch Open Edition</p>
+
+    <div id="main-interface">
+        <button class="btn" onclick="requestNotifications()">🔔 Zet Notificaties Aan</button>
+        <input type="text" id="searchInput" placeholder="Zoek op jouw naam..." oninput="displayMatches()">
+        <div id="results">Voer eerst een link in bij instellingen...</div>
+        <button class="btn btn-settings" onclick="toggleSettings()">⚙️ Instellingen (Sheet Link)</button>
+    </div>
+
+    <div id="settings-section">
+        <h3>Instellingen</h3>
+        <p style="font-size: 0.8em;">Plak hier de Google Sheets CSV link:</p>
+        <input type="text" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/e/...">
+        <button class="btn" onclick="saveSettings()">Opslaan & Laden</button>
+        <button class="btn btn-danger" onclick="clearSettings()">Link Verwijderen</button>
+        <button class="btn btn-settings" onclick="toggleSettings()">Terug</button>
+    </div>
+</div>
+
+<script>
+    let dartsData = [];
+    let activeUrl = localStorage.getItem('darts_sheet_url');
+
+    function toggleSettings() {
+        const settings = document.getElementById('settings-section');
+        const main = document.getElementById('main-interface');
+        if (settings.style.display === "none" || settings.style.display === "") {
+            settings.style.display = "block";
+            main.style.display = "none";
+            document.getElementById('sheetUrlInput').value = activeUrl || "";
+        } else {
+            settings.style.display = "none";
+            main.style.display = "block";
+        }
+    }
+
+    function saveSettings() {
+        const url = document.getElementById('sheetUrlInput').value;
+        if (url.includes("pub?output=csv")) {
+            localStorage.setItem('darts_sheet_url', url);
+            activeUrl = url;
+            alert("Instellingen opgeslagen!");
+            fetchData();
+            toggleSettings();
+        } else {
+            alert("Let op: Gebruik de 'Gepubliceerd als CSV' link uit Google Sheets!");
+        }
+    }
+
+    function clearSettings() {
+        localStorage.removeItem('darts_sheet_url');
+        activeUrl = null;
+        dartsData = [];
+        displayMatches();
+        alert("Instellingen verwijderd.");
+    }
+
+    async function fetchData() {
+        if (!activeUrl) {
+            document.getElementById('results').innerHTML = "<i>Geen actieve sheet gekoppeld. Ga naar instellingen.</i>";
+            return;
+        }
+        
+        Papa.parse(activeUrl, {
+            download: true,
+            header: true,
+            complete: function(results) {
+                dartsData = results.data;
+                displayMatches();
+                checkUpcomingMatches();
+            },
+            error: function() {
+                document.getElementById('results').innerHTML = "<b style='color:red;'>Fout bij laden. Controleer je link.</b>";
+            }
+        });
+    }
+
+    function displayMatches() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = "";
+
+        if (dartsData.length === 0 && activeUrl) {
+            resultsDiv.innerHTML = "Laden...";
+            return;
+        }
+
+        const filtered = dartsData.filter(row => 
+            row.Speler && row.Speler.toLowerCase().includes(query)
+        );
+
+        if (filtered.length === 0 && query !== "") {
+            resultsDiv.innerHTML = "Geen speler gevonden.";
+        }
+
+        filtered.forEach(match => {
+            resultsDiv.innerHTML += `
+                <div class="match-card">
+                    <div>
+                        <strong>${match.Speler}</strong><br>
+                        <small>Bord ${match.Bord}</small>
+                    </div>
+                    <div style="font-weight: bold; color: #2ecc71;">${match.Tijd}</div>
+                </div>`;
+        });
+    }
+
+    function requestNotifications() {
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                alert("Perfect! Je krijgt nu 15 min. voor aanvang een melding.");
+                new Notification("Systeem geactiveerd", { body: "Je ontvangt nu darts alerts." });
+            }
+        });
+    }
+
+    function checkUpcomingMatches() {
+        if (dartsData.length === 0) return;
+        const nu = new Date();
+        const targetTijd = new Date(nu.getTime() + 15 * 60000).toLocaleTimeString('nl-NL', {hour: '2-digit', minute:'2-digit'});
+
+        dartsData.forEach(match => {
+            if (match.Tijd === targetTijd) {
+                new Notification("Darts: Game On!", {
+                    body: `${match.Speler}, over 15 min op bord ${match.Bord}!`,
+                    icon: "https://cdn-icons-png.flaticon.com/512/3068/3068351.png"
+                });
+            }
+        });
+    }
+
+    setInterval(fetchData, 120000); // Ververs data elke 2 min
+    setInterval(checkUpcomingMatches, 60000); // Check tijd elke minuut
+    fetchData(); // Eerste keer laden
+</script>
+
+</body>
+</html>
