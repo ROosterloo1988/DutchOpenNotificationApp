@@ -1,6 +1,6 @@
 // --- VERSIE BEHEER ---
 // VERANDER DIT NUMMER ALS JE EEN UPDATE PUSHT NAAR GITHUB! (Bijv: v1 -> v2)
-const CACHE_NAME = "dutch-open-v1.1"; 
+const CACHE_NAME = "dutch-open-v2"; 
 
 const urlsToCache = [
   "./",
