@@ -83,7 +83,7 @@
         
         <div id="welcome-area"></div>
 
-        <p style="text-align:center; color:#777; margin-bottom:30px;">Kies je toernooi:</p>
+        <p style="text-align:center; color:#777; margin-bottom:30px;">Toernooi selecteren:</p>
         
         <button class="btn btn-primary" onclick="startApp('koppels')">
             Koppel Toernooi
@@ -142,21 +142,28 @@
     };
 
     /* ================= 🚀 APP LOGICA ================= */
-    let processedMatches = [];
-    let activeTournament = null;
+    // 'allMatches' bevat straks ALLES (singles én koppels) voor de notificaties
+    let allMatches = []; 
+    let currentFilter = null; // Wat kijken we nu? 'singles' of 'koppels'
     let notifiedMatches = new Set(); 
     let newWorker;
 
     const DATE_SINGLES = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.singles.maand, JAAR_INSTELLINGEN.singles.dag);
     const DATE_KOPPELS = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.koppels.maand, JAAR_INSTELLINGEN.koppels.dag);
 
-    // Datums invullen op startscherm
-    document.getElementById('lbl-singles').innerText = DATE_SINGLES.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
-    document.getElementById('lbl-koppels').innerText = DATE_KOPPELS.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
+    // Initialisatie bij laden pagina
+    document.addEventListener("DOMContentLoaded", () => {
+        // Zet datums in scherm
+        document.getElementById('lbl-singles').innerText = DATE_SINGLES.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
+        document.getElementById('lbl-koppels').innerText = DATE_KOPPELS.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
 
-    if (TEST_MODUS) document.getElementById('test-banner').classList.remove('hidden');
+        if (TEST_MODUS) document.getElementById('test-banner').classList.remove('hidden');
 
-    // Welkomstboodschap (alleen 's ochtends)
+        showWelcome();
+        // DIRECT ALLES LADEN!
+        loadAllData();
+    });
+
     function showWelcome() {
         const nu = new Date();
         if (nu.getHours() >= 6 && nu.getHours() < 13) {
@@ -164,59 +171,52 @@
         }
     }
 
-    // WAKE-UP CALL: Verversen zodra app zichtbaar wordt
+    // WAKE-UP CALL: Ververs alles als app wakker wordt
     document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible" && activeTournament) {
-            console.log("App ontwaakt: Data checken...");
-            fetchData(activeTournament.url);
-            checkNotifications(); 
+        if (document.visibilityState === "visible") {
+            console.log("App ontwaakt: Data verversen...");
+            loadAllData();
         }
     });
 
-    function startApp(type) {
-        let selectedDate = type === 'singles' ? DATE_SINGLES : DATE_KOPPELS;
-        let selectedUrl = LINKS[type];
-        activeTournament = { name: type === 'singles' ? "Single Toernooi" : "Koppel Toernooi", date: selectedDate, url: selectedUrl };
+    // NIEUWE FUNCTIE: Haalt ZOWEL singles ALS koppels op
+    function loadAllData() {
+        // Resetten we de lijst? Nee, we bouwen hem opnieuw op om duplicaten te voorkomen
+        let tempList = [];
+        let completed = 0;
 
-        if (!selectedUrl || selectedUrl.includes("HIER")) { alert("⚠️ Link nog niet ingesteld!"); return; }
+        const finish = () => {
+            completed++;
+            if(completed === 2) { // Als beide sheets binnen zijn
+                allMatches = tempList;
+                displayMatches(); // Update scherm als je al aan het kijken bent
+                checkNotifications(); // Check notificaties voor ALLES
+            }
+        };
 
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'block';
-        document.getElementById('toernooi-titel').innerText = activeTournament.name;
-        document.getElementById('toernooi-datum').innerText = selectedDate.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-        
-        fetchData(activeTournament.url);
-    }
-
-    function showStart() {
-        document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('start-screen').style.display = 'block';
-        processedMatches = [];
-        notifiedMatches.clear(); 
-        activeTournament = null;
-        document.getElementById('results').innerHTML = "";
-        document.getElementById('searchInput').value = "";
-    }
-
-    function fetchData(url) {
-        const resDiv = document.getElementById('results');
-        if(resDiv.innerHTML === "") resDiv.innerHTML = "<div class='empty-msg'>Laden...</div>";
-        Papa.parse(url, {
+        // 1. Haal Singles op
+        Papa.parse(LINKS.singles, {
             download: true, header: true, skipEmptyLines: true,
             complete: function(results) {
-                convertMatrixToList(results.data);
-                displayMatches();
-                checkNotifications(); 
+                processRawData(results.data, 'singles', tempList);
+                finish();
             },
-            error: function() {
-                document.getElementById('results').innerHTML = "<div class='empty-msg'>Fout bij laden. Check internet.</div>";
-            }
+            error: finish
+        });
+
+        // 2. Haal Koppels op
+        Papa.parse(LINKS.koppels, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: function(results) {
+                processRawData(results.data, 'koppels', tempList);
+                finish();
+            },
+            error: finish
         });
     }
 
-    // Matrix omzetten naar Lijst + Tijdcorrectie (6:15 -> 06:15)
-    function convertMatrixToList(data) {
-        processedMatches = []; 
+    // Hulpfunctie om ruwe CSV data om te zetten en datum toe te voegen
+    function processRawData(data, type, listToAddTo) {
         data.forEach(row => {
             const keys = Object.keys(row);
             const naam = row[keys[0]]; 
@@ -229,25 +229,67 @@
                     let parts = cleanTime.split(':');
                     if(parts[0].length === 1) parts[0] = "0" + parts[0]; 
                     if(parts[1].length === 1) parts[1] = "0" + parts[1]; 
-                    processedMatches.push({ speler: naam, tijd: `${parts[0]}:${parts[1]}`, bord: bordNummer });
+                    
+                    // We voegen het 'type' toe zodat we weten welke datum erbij hoort!
+                    listToAddTo.push({ 
+                        speler: naam, 
+                        tijd: `${parts[0]}:${parts[1]}`, 
+                        bord: bordNummer,
+                        type: type 
+                    });
                 }
             });
         });
     }
 
+    function startApp(type) {
+        currentFilter = type; // Onthoud wat we willen zien
+
+        let selectedDate = type === 'singles' ? DATE_SINGLES : DATE_KOPPELS;
+        let title = type === 'singles' ? "Single Toernooi" : "Koppel Toernooi";
+
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        document.getElementById('toernooi-titel').innerText = title;
+        document.getElementById('toernooi-datum').innerText = selectedDate.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+        
+        displayMatches();
+    }
+
+    function showStart() {
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+        currentFilter = null;
+        document.getElementById('searchInput').value = "";
+    }
+
     function displayMatches() {
+        // Alleen iets tonen als we in een scherm zitten
+        if (!currentFilter) return;
+
         const query = document.getElementById('searchInput').value.toLowerCase();
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = "";
 
-        if(processedMatches.length === 0) { resultsDiv.innerHTML = "<div class='empty-msg'>Geen data.</div>"; return; }
+        // Filter de Grote Lijst op basis van het gekozen toernooi
+        let viewList = allMatches.filter(m => m.type === currentFilter);
+
+        if(viewList.length === 0) { resultsDiv.innerHTML = "<div class='empty-msg'>Gegevens laden of geen wedstrijden...</div>"; return; }
 
         const nu = new Date();
-        const filtered = processedMatches.filter(match => {
-            let matchDate = TEST_MODUS ? new Date() : new Date(activeTournament.date);
+        const filtered = viewList.filter(match => {
+            // Bepaal datum op basis van type
+            let matchDate;
+            if (TEST_MODUS) {
+                matchDate = new Date();
+            } else {
+                matchDate = match.type === 'singles' ? new Date(DATE_SINGLES) : new Date(DATE_KOPPELS);
+            }
+
             const [h, m] = match.tijd.split(':').map(Number);
             matchDate.setHours(h, m, 0, 0);
             const vervalTijd = new Date(matchDate.getTime() + 15 * 60000); 
+            
             return match.speler.toLowerCase().includes(query) && nu < vervalTijd;
         });
 
@@ -277,16 +319,23 @@
         });
     }
 
-    // --- KRACHTIGE NOTIFICATIE FUNCTIE (ANDROID FIX) ---
+    // --- NOTIFICATIE FUNCTIE VOOR ALLES ---
     function checkNotifications() {
-        if (!activeTournament) return;
         const nu = new Date();
         
-        processedMatches.forEach(match => {
+        // We lopen nu door ALLE wedstrijden, niet alleen het actieve scherm
+        allMatches.forEach(match => {
             const matchId = `${match.speler}-${match.tijd}-${match.bord}`;
             if (notifiedMatches.has(matchId)) return; 
 
-            let matchDate = TEST_MODUS ? new Date() : new Date(activeTournament.date);
+            // Bepaal datum op basis van type
+            let matchDate;
+            if (TEST_MODUS) {
+                matchDate = new Date();
+            } else {
+                matchDate = match.type === 'singles' ? new Date(DATE_SINGLES) : new Date(DATE_KOPPELS);
+            }
+
             const [h, m] = match.tijd.split(':').map(Number);
             matchDate.setHours(h, m, 0, 0);
 
@@ -295,10 +344,12 @@
             // Melding geven als wedstrijd binnen nu en 20 minuten is
             if (diffMins > 0 && diffMins <= 20) {
                 
+                let title = match.type === 'singles' ? "🎯 Single Alert!" : "🎯 Koppel Alert!";
+
                 // Via ServiceWorker sturen (Werkt beter op Android)
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.ready.then(function(registration) {
-                        registration.showNotification("🎯 Game On!", {
+                        registration.showNotification(title, {
                             body: `${match.speler}, over ${Math.round(diffMins)} min op bord ${match.bord}!`,
                             icon: "icon.png",
                             vibrate: [200, 100, 200],
@@ -307,8 +358,7 @@
                         });
                     });
                 } else {
-                    // Fallback
-                    new Notification("🎯 Game On!", {
+                    new Notification(title, {
                         body: `${match.speler}, over ${Math.round(diffMins)} min op bord ${match.bord}!`
                     });
                 }
@@ -349,8 +399,8 @@
     }
     function updateApp() { if (newWorker) newWorker.postMessage({ action: 'skipWaiting' }); }
 
-    showWelcome();
-    setInterval(displayMatches, 60000); 
+    // Intervals: Data blijven verversen en checken
+    setInterval(loadAllData, 60000); 
     setInterval(checkNotifications, 30000); 
 </script>
 </body>
