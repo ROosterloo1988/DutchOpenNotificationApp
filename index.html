@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dutch Open Darts Notification App</title>
+    <title>Dutch Open Darts Tracker</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon.png">
@@ -15,12 +15,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
-        }
-    </script>
-
     <style>
         :root { --primary: #FF6600; --dark: #121212; --card-bg: #1E1E1E; --text-main: #FFFFFF; --gradient: linear-gradient(135deg, #FF6600 0%, #FF8533 100%); }
         body { font-family: 'Montserrat', sans-serif; background-color: var(--dark); color: var(--text-main); margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
@@ -40,8 +34,6 @@
         .btn-primary { background: var(--gradient); color: white; box-shadow: 0 8px 20px rgba(255, 102, 0, 0.3); }
         .btn-secondary { background: #2C2C2C; color: white; font-size: 0.9rem; padding: 12px; border: 1px solid #444; }
         .btn-date { display: block; font-size: 0.75rem; font-weight: 500; opacity: 0.9; margin-top: 5px; text-transform: none; }
-        .btn-notify { background: transparent; border: 2px solid #00A8FF; color: #00A8FF; font-size: 0.9rem; padding: 15px; margin-top: 20px; transition: 0.3s; width: 100%; border-radius: 15px; cursor: pointer; }
-        .btn-notify:hover { background: rgba(0, 168, 255, 0.1); }
 
         /* ZOEKBALK */
         .search-wrapper { position: relative; margin-bottom: 20px; }
@@ -56,14 +48,8 @@
 
         /* UTILS & ANIMATIES */
         #game-screen, #start-screen { display: none; }
-        .test-banner { background: #E74C3C; color: white; text-align: center; padding: 5px; font-size: 0.8rem; font-weight: bold; }
         .empty-msg { text-align: center; color: #777; margin-top: 40px; font-style: italic; }
         
-        /* UPDATE MELDING (TOAST) */
-        .update-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; border: 1px solid #FF6600; color: white; padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1000; width: 90%; max-width: 400px; }
-        .hidden { display: none !important; }
-        .btn-update { background: #FF6600; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .match-card:nth-child(1) { animation-delay: 0.1s; } .match-card:nth-child(2) { animation-delay: 0.15s; } .match-card:nth-child(3) { animation-delay: 0.2s; }
     </style>
@@ -72,10 +58,8 @@
 
 <div class="app-header">
     <img src="https://dutchopendarts.nl/wp-content/uploads/2026/01/DOD_FCwitte-rand.png" alt="Dutch Open Logo" class="logo-img">
-    <div class="subtitle">Notification App</div>
+    <div class="subtitle">Official Team Tracker</div>
 </div>
-
-<div id="test-banner" class="test-banner hidden">⚠️ TEST MODUS: VANDAAG</div>
 
 <div class="container">
     
@@ -93,14 +77,6 @@
         <button class="btn btn-primary" onclick="startApp('singles')">
             Single Toernooi
             <span class="btn-date" id="lbl-singles">Laden...</span>
-        </button>
-        
-        <button class="btn btn-notify" onclick="requestPermission()">
-            🔔 Meldingen Aanzetten
-        </button>
-        
-        <button class="btn" style="background: #333; font-size: 0.8em; margin-top:10px; padding: 15px;" onclick="testNotification()">
-            🛠️ Test Melding Nu
         </button>
 
         <p style="text-align:center; font-size:0.7em; color:#444; margin-top:40px;">Made for Champions 🏆</p>
@@ -120,11 +96,6 @@
     </div>
 </div>
 
-<div id="update-notification" class="update-toast hidden">
-    <div style="flex:1;"><strong>Update beschikbaar! 🚀</strong><br><span style="font-size:0.8rem;">Klik om te verversen</span></div>
-    <button class="btn-update" onclick="updateApp()">Update Nu</button>
-</div>
-
 <script>
     /* ================= 🛠️ INSTELLINGEN ================= */
     const JAAR_INSTELLINGEN = {
@@ -133,8 +104,9 @@
         koppels: { dag: 6, maand: 1 }  // 1 = Februari
     };
 
-    // ZET OP TRUE OM VANDAAG TE TESTEN. ZET OP FALSE VOOR HET TOERNOOI!
-    const TEST_MODUS = true; 
+    // ZET OP TRUE OM VANDAAG TE ZIEN WAT ER GEBEURT (testdata). 
+    // ZET OP FALSE VOOR HET ECHTE TOERNOOI!
+    const TEST_MODUS = false; 
 
     const LINKS = {
         singles: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIiQL-iNO9bFVNuQpsHJLpIpecZ9qZnQmWHkssBUxyt4FTe5vmjDNdkdNyAs6SyCW9I8ODKPjvecYM/pub?gid=0&single=true&output=csv",
@@ -142,11 +114,8 @@
     };
 
     /* ================= 🚀 APP LOGICA ================= */
-    // 'allMatches' bevat straks ALLES (singles én koppels) voor de notificaties
     let allMatches = []; 
-    let currentFilter = null; // Wat kijken we nu? 'singles' of 'koppels'
-    let notifiedMatches = new Set(); 
-    let newWorker;
+    let currentFilter = null; 
 
     const DATE_SINGLES = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.singles.maand, JAAR_INSTELLINGEN.singles.dag);
     const DATE_KOPPELS = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.koppels.maand, JAAR_INSTELLINGEN.koppels.dag);
@@ -157,11 +126,8 @@
         document.getElementById('lbl-singles').innerText = DATE_SINGLES.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
         document.getElementById('lbl-koppels').innerText = DATE_KOPPELS.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
 
-        if (TEST_MODUS) document.getElementById('test-banner').classList.remove('hidden');
-
         showWelcome();
-        // DIRECT ALLES LADEN!
-        loadAllData();
+        loadAllData(); // Direct laden
     });
 
     function showWelcome() {
@@ -171,51 +137,40 @@
         }
     }
 
-    // WAKE-UP CALL: Ververs alles als app wakker wordt
+    // WAKE-UP CALL: Verversen zodra app zichtbaar wordt
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
-            console.log("App ontwaakt: Data verversen...");
             loadAllData();
         }
     });
 
-    // NIEUWE FUNCTIE: Haalt ZOWEL singles ALS koppels op
+    // Haalt ZOWEL singles ALS koppels op
     function loadAllData() {
-        // Resetten we de lijst? Nee, we bouwen hem opnieuw op om duplicaten te voorkomen
         let tempList = [];
         let completed = 0;
 
         const finish = () => {
             completed++;
-            if(completed === 2) { // Als beide sheets binnen zijn
+            if(completed === 2) { 
                 allMatches = tempList;
                 displayMatches(); // Update scherm als je al aan het kijken bent
-                checkNotifications(); // Check notificaties voor ALLES
             }
         };
 
-        // 1. Haal Singles op
         Papa.parse(LINKS.singles, {
             download: true, header: true, skipEmptyLines: true,
-            complete: function(results) {
-                processRawData(results.data, 'singles', tempList);
-                finish();
-            },
+            complete: function(results) { processRawData(results.data, 'singles', tempList); finish(); },
             error: finish
         });
 
-        // 2. Haal Koppels op
         Papa.parse(LINKS.koppels, {
             download: true, header: true, skipEmptyLines: true,
-            complete: function(results) {
-                processRawData(results.data, 'koppels', tempList);
-                finish();
-            },
+            complete: function(results) { processRawData(results.data, 'koppels', tempList); finish(); },
             error: finish
         });
     }
 
-    // Hulpfunctie om ruwe CSV data om te zetten en datum toe te voegen
+    // Data verwerken
     function processRawData(data, type, listToAddTo) {
         data.forEach(row => {
             const keys = Object.keys(row);
@@ -230,7 +185,6 @@
                     if(parts[0].length === 1) parts[0] = "0" + parts[0]; 
                     if(parts[1].length === 1) parts[1] = "0" + parts[1]; 
                     
-                    // We voegen het 'type' toe zodat we weten welke datum erbij hoort!
                     listToAddTo.push({ 
                         speler: naam, 
                         tijd: `${parts[0]}:${parts[1]}`, 
@@ -243,8 +197,7 @@
     }
 
     function startApp(type) {
-        currentFilter = type; // Onthoud wat we willen zien
-
+        currentFilter = type; 
         let selectedDate = type === 'singles' ? DATE_SINGLES : DATE_KOPPELS;
         let title = type === 'singles' ? "Single Toernooi" : "Koppel Toernooi";
 
@@ -264,21 +217,18 @@
     }
 
     function displayMatches() {
-        // Alleen iets tonen als we in een scherm zitten
         if (!currentFilter) return;
 
         const query = document.getElementById('searchInput').value.toLowerCase();
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = "";
 
-        // Filter de Grote Lijst op basis van het gekozen toernooi
         let viewList = allMatches.filter(m => m.type === currentFilter);
 
-        if(viewList.length === 0) { resultsDiv.innerHTML = "<div class='empty-msg'>Gegevens laden of geen wedstrijden...</div>"; return; }
+        if(viewList.length === 0) { resultsDiv.innerHTML = "<div class='empty-msg'>Gegevens laden...</div>"; return; }
 
         const nu = new Date();
         const filtered = viewList.filter(match => {
-            // Bepaal datum op basis van type
             let matchDate;
             if (TEST_MODUS) {
                 matchDate = new Date();
@@ -312,96 +262,8 @@
         });
     }
 
-    function requestPermission() {
-        Notification.requestPermission().then(perm => { 
-            if(perm === "granted") alert("✅ Meldingen staan aan!"); 
-            else alert("⚠️ Meldingen zijn geblokkeerd in je browser instellingen.");
-        });
-    }
-
-    // --- NOTIFICATIE FUNCTIE VOOR ALLES ---
-    function checkNotifications() {
-        const nu = new Date();
-        
-        // We lopen nu door ALLE wedstrijden, niet alleen het actieve scherm
-        allMatches.forEach(match => {
-            const matchId = `${match.speler}-${match.tijd}-${match.bord}`;
-            if (notifiedMatches.has(matchId)) return; 
-
-            // Bepaal datum op basis van type
-            let matchDate;
-            if (TEST_MODUS) {
-                matchDate = new Date();
-            } else {
-                matchDate = match.type === 'singles' ? new Date(DATE_SINGLES) : new Date(DATE_KOPPELS);
-            }
-
-            const [h, m] = match.tijd.split(':').map(Number);
-            matchDate.setHours(h, m, 0, 0);
-
-            const diffMins = (matchDate - nu) / 60000;
-
-            // Melding geven als wedstrijd binnen nu en 20 minuten is
-            if (diffMins > 0 && diffMins <= 20) {
-                
-                let title = match.type === 'singles' ? "🎯 Single Alert!" : "🎯 Koppel Alert!";
-
-                // Via ServiceWorker sturen (Werkt beter op Android)
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then(function(registration) {
-                        registration.showNotification(title, {
-                            body: `${match.speler}, over ${Math.round(diffMins)} min op bord ${match.bord}!`,
-                            icon: "icon.png",
-                            vibrate: [200, 100, 200],
-                            tag: matchId, 
-                            requireInteraction: true
-                        });
-                    });
-                } else {
-                    new Notification(title, {
-                        body: `${match.speler}, over ${Math.round(diffMins)} min op bord ${match.bord}!`
-                    });
-                }
-
-                notifiedMatches.add(matchId);
-            }
-        });
-    }
-
-    // --- TEST FUNCTIE ---
-    function testNotification() {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(function(registration) {
-                registration.showNotification("Test Melding", {
-                    body: "Als je dit ziet, werkt het!",
-                    icon: "icon.png",
-                    vibrate: [200, 100, 200]
-                });
-            });
-        } else {
-            new Notification("Test Melding", { body: "Dit is een test." });
-        }
-    }
-
-    // --- UPDATE LOGICA ---
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./service-worker.js').then(reg => {
-            reg.addEventListener('updatefound', () => {
-                newWorker = reg.installing;
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        document.getElementById('update-notification').classList.remove('hidden');
-                    }
-                });
-            });
-        });
-        navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
-    }
-    function updateApp() { if (newWorker) newWorker.postMessage({ action: 'skipWaiting' }); }
-
-    // Intervals: Data blijven verversen en checken
+    // Refresh data elke 60 seconden automatisch
     setInterval(loadAllData, 60000); 
-    setInterval(checkNotifications, 30000); 
 </script>
 </body>
 </html>
