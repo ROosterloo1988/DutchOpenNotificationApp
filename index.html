@@ -25,16 +25,16 @@
         :root { --primary: #FF6600; --dark: #121212; --card-bg: #1E1E1E; --text-main: #FFFFFF; --gradient: linear-gradient(135deg, #FF6600 0%, #FF8533 100%); }
         body { font-family: 'Montserrat', sans-serif; background-color: var(--dark); color: var(--text-main); margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
 
-        /* HEADER */
+        /* HEADER & LOGO */
         .app-header { background: linear-gradient(to bottom, #1a1a1a, #0d0d0d); padding: 25px 20px 15px; text-align: center; border-bottom: 3px solid var(--primary); position: relative; z-index: 10; }
-        .logo-img { max-width: 220px; height: auto; display: block; margin: 0 auto 5px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
+        .logo-img { max-width: 240px; height: auto; display: block; margin: 0 auto 5px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
         .subtitle { color: var(--primary); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; }
 
-        /* CONTENT */
+        /* CONTENT CONTAINER */
         .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 80px; }
         .welcome-card { background: rgba(255, 102, 0, 0.1); border: 1px solid rgba(255, 102, 0, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: center; }
 
-        /* BUTTONS */
+        /* KNOPPEN */
         .btn { display: block; width: 100%; padding: 20px; border: none; border-radius: 15px; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.2rem; cursor: pointer; text-transform: uppercase; margin-bottom: 15px; position: relative; }
         .btn:active { transform: scale(0.96); }
         .btn-primary { background: var(--gradient); color: white; box-shadow: 0 8px 20px rgba(255, 102, 0, 0.3); }
@@ -43,23 +43,23 @@
         .btn-notify { background: transparent; border: 2px solid #00A8FF; color: #00A8FF; font-size: 0.9rem; padding: 15px; margin-top: 20px; transition: 0.3s; width: 100%; border-radius: 15px; cursor: pointer; }
         .btn-notify:hover { background: rgba(0, 168, 255, 0.1); }
 
-        /* INPUT */
+        /* ZOEKBALK */
         .search-wrapper { position: relative; margin-bottom: 20px; }
         input { width: 100%; padding: 18px; background: var(--card-bg); border: 2px solid #333; border-radius: 12px; color: white; font-size: 1.1rem; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
         input:focus { outline: none; border-color: var(--primary); background: #252525; }
 
-        /* MATCH CARD */
+        /* WEDSTRIJD KAART */
         .match-card { background: var(--card-bg); border-radius: 12px; padding: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary); animation: slideUp 0.4s ease forwards; opacity: 0; }
         .match-info strong { display: block; font-size: 1.15rem; margin-bottom: 4px; color: #fff; }
         .match-info small { color: var(--primary); text-transform: uppercase; font-weight: 700; font-size: 0.8rem; }
         .time-badge { background: #333; padding: 10px 15px; border-radius: 10px; font-weight: 900; color: #fff; font-size: 1.3rem; min-width: 60px; text-align: center; border: 1px solid #444; }
 
-        /* UTILS */
+        /* UTILS & ANIMATIES */
         #game-screen, #start-screen { display: none; }
         .test-banner { background: #E74C3C; color: white; text-align: center; padding: 5px; font-size: 0.8rem; font-weight: bold; }
         .empty-msg { text-align: center; color: #777; margin-top: 40px; font-style: italic; }
         
-        /* UPDATE TOAST */
+        /* UPDATE MELDING (TOAST) */
         .update-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; border: 1px solid #FF6600; color: white; padding: 15px; border-radius: 12px; display: flex; align-items: center; gap: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1000; width: 90%; max-width: 400px; }
         .hidden { display: none !important; }
         .btn-update { background: #FF6600; color: white; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -71,7 +71,7 @@
 <body>
 
 <div class="app-header">
-    <img src="https://dutchopendarts.nl/wp-content/uploads/2021/10/Logo-Dutch-Open-Darts.png" alt="Dutch Open Logo" class="logo-img">
+    <img src="https://dutchopendarts.nl/wp-content/uploads/2026/01/DOD_FCwitte-rand.png" alt="Dutch Open Logo" class="logo-img">
     <div class="subtitle">Official Team Tracker</div>
 </div>
 
@@ -97,6 +97,10 @@
             🔔 Meldingen Aanzetten
         </button>
         
+        <button class="btn" style="background: #333; font-size: 0.8em; margin-top:10px; padding: 15px;" onclick="testNotification()">
+            🛠️ Test Melding Nu
+        </button>
+
         <p style="text-align:center; font-size:0.7em; color:#444; margin-top:40px;">Made for Champions 🏆</p>
     </div>
 
@@ -120,34 +124,37 @@
 </div>
 
 <script>
-    /* ================= INSTELLINGEN ================= */
+    /* ================= 🛠️ INSTELLINGEN ================= */
     const JAAR_INSTELLINGEN = {
         jaar: 2026,
-        singles: { dag: 7, maand: 1 }, // 1 = Februari
+        singles: { dag: 7, maand: 1 }, // 1 = Februari (0=Januari)
         koppels: { dag: 6, maand: 1 }  // 1 = Februari
     };
 
-    const TEST_MODUS = false; // Zet op TRUE om vandaag te testen
+    // ZET OP TRUE OM VANDAAG TE TESTEN. ZET OP FALSE VOOR HET TOERNOOI!
+    const TEST_MODUS = true; 
 
     const LINKS = {
         singles: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSIiQL-iNO9bFVNuQpsHJLpIpecZ9qZnQmWHkssBUxyt4FTe5vmjDNdkdNyAs6SyCW9I8ODKPjvecYM/pub?gid=0&single=true&output=csv",
         koppels: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRywRppeAUw5Lmdx2dJsUaRiFXttSD-tyr_jJPUwridWCTFFbT631wr5z5HmJEvhJsTC5DRYEtaYb5s/pub?gid=0&single=true&output=csv"
     };
 
-    /* ================= APP LOGICA ================= */
+    /* ================= 🚀 APP LOGICA ================= */
     let processedMatches = [];
     let activeTournament = null;
-    let notifiedMatches = new Set(); // Geheugen voor verzonden meldingen
+    let notifiedMatches = new Set(); 
     let newWorker;
 
     const DATE_SINGLES = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.singles.maand, JAAR_INSTELLINGEN.singles.dag);
     const DATE_KOPPELS = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.koppels.maand, JAAR_INSTELLINGEN.koppels.dag);
 
+    // Datums invullen op startscherm
     document.getElementById('lbl-singles').innerText = DATE_SINGLES.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
     document.getElementById('lbl-koppels').innerText = DATE_KOPPELS.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
 
     if (TEST_MODUS) document.getElementById('test-banner').classList.remove('hidden');
 
+    // Welkomstboodschap (alleen 's ochtends)
     function showWelcome() {
         const nu = new Date();
         if (nu.getHours() >= 6 && nu.getHours() < 13) {
@@ -155,12 +162,12 @@
         }
     }
 
-    // SLIMME WAKE-UP: Check alles zodra de app weer zichtbaar is (ontgrendelen)
+    // WAKE-UP CALL: Verversen zodra app zichtbaar wordt
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible" && activeTournament) {
-            console.log("App ontwaakt: Data en meldingen checken...");
-            fetchData(activeTournament.url); // Data verversen
-            checkNotifications(); // Direct checken of we iets gemist hebben
+            console.log("App ontwaakt: Data checken...");
+            fetchData(activeTournament.url);
+            checkNotifications(); 
         }
     });
 
@@ -183,7 +190,7 @@
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('start-screen').style.display = 'block';
         processedMatches = [];
-        notifiedMatches.clear(); // Geheugen wissen bij teruggaan
+        notifiedMatches.clear(); 
         activeTournament = null;
         document.getElementById('results').innerHTML = "";
         document.getElementById('searchInput').value = "";
@@ -205,6 +212,7 @@
         });
     }
 
+    // Matrix omzetten naar Lijst + Tijdcorrectie (6:15 -> 06:15)
     function convertMatrixToList(data) {
         processedMatches = []; 
         data.forEach(row => {
@@ -215,12 +223,10 @@
                 if (index === 0) return; 
                 let tijdHeader = key; const bordNummer = row[key]; 
                 if ((tijdHeader.includes(":") || tijdHeader.includes(".")) && bordNummer && bordNummer.trim() !== "") {
-                    // FIX VOOR SORTERING (6:15 -> 06:15)
                     let cleanTime = tijdHeader.replace('.', ':');
                     let parts = cleanTime.split(':');
-                    if(parts[0].length === 1) parts[0] = "0" + parts[0]; // 6 -> 06
-                    if(parts[1].length === 1) parts[1] = "0" + parts[1]; // 5 -> 05
-                    // Seconden strippen als die er zijn
+                    if(parts[0].length === 1) parts[0] = "0" + parts[0]; 
+                    if(parts[1].length === 1) parts[1] = "0" + parts[1]; 
                     processedMatches.push({ speler: naam, tijd: `${parts[0]}:${parts[1]}`, bord: bordNummer });
                 }
             });
@@ -239,7 +245,7 @@
             let matchDate = TEST_MODUS ? new Date() : new Date(activeTournament.date);
             const [h, m] = match.tijd.split(':').map(Number);
             matchDate.setHours(h, m, 0, 0);
-            const vervalTijd = new Date(matchDate.getTime() + 15 * 60000); // 15 min na start weg
+            const vervalTijd = new Date(matchDate.getTime() + 15 * 60000); 
             return match.speler.toLowerCase().includes(query) && nu < vervalTijd;
         });
 
@@ -265,18 +271,18 @@
     function requestPermission() {
         Notification.requestPermission().then(perm => { 
             if(perm === "granted") alert("✅ Meldingen staan aan!"); 
-            else alert("⚠️ Meldingen zijn geblokkeerd in je browser.");
+            else alert("⚠️ Meldingen zijn geblokkeerd in je browser instellingen.");
         });
     }
 
-    // --- DE NOTIFICATIE LOGICA ---
+    // --- KRACHTIGE NOTIFICATIE FUNCTIE (ANDROID FIX) ---
     function checkNotifications() {
         if (!activeTournament) return;
         const nu = new Date();
         
         processedMatches.forEach(match => {
             const matchId = `${match.speler}-${match.tijd}-${match.bord}`;
-            if (notifiedMatches.has(matchId)) return; // Al gemeld?
+            if (notifiedMatches.has(matchId)) return; 
 
             let matchDate = TEST_MODUS ? new Date() : new Date(activeTournament.date);
             const [h, m] = match.tijd.split(':').map(Number);
@@ -284,18 +290,45 @@
 
             const diffMins = (matchDate - nu) / 60000;
 
-            // Als wedstrijd in de toekomst is, maar binnen 20 minuten
-            // Dus: 15 minuten vooraf, of als je net 5 min te laat kijkt
+            // Melding geven als wedstrijd binnen nu en 20 minuten is
             if (diffMins > 0 && diffMins <= 20) {
-                new Notification("🎯 Game On!", {
-                    body: `${match.speler}, over ${Math.round(diffMins)} min op bord ${match.bord}!`,
-                    requireInteraction: true,
-                    vibrate: [200, 100, 200],
-                    icon: "icon.png"
-                });
+                
+                // Via ServiceWorker sturen (Werkt beter op Android)
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(function(registration) {
+                        registration.showNotification("🎯 Game On!", {
+                            body: `${match.speler}, over ${Math.round(diffMins)} min op bord ${match.bord}!`,
+                            icon: "icon.png",
+                            vibrate: [200, 100, 200],
+                            tag: matchId, 
+                            requireInteraction: true
+                        });
+                    });
+                } else {
+                    // Fallback
+                    new Notification("🎯 Game On!", {
+                        body: `${match.speler}, over ${Math.round(diffMins)} min op bord ${match.bord}!`
+                    });
+                }
+
                 notifiedMatches.add(matchId);
             }
         });
+    }
+
+    // --- TEST FUNCTIE ---
+    function testNotification() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(function(registration) {
+                registration.showNotification("Test Melding", {
+                    body: "Als je dit ziet, werkt het!",
+                    icon: "icon.png",
+                    vibrate: [200, 100, 200]
+                });
+            });
+        } else {
+            new Notification("Test Melding", { body: "Dit is een test." });
+        }
     }
 
     // --- UPDATE LOGICA ---
@@ -316,7 +349,7 @@
 
     showWelcome();
     setInterval(displayMatches, 60000); 
-    setInterval(checkNotifications, 30000); // Check elke 30 sec
+    setInterval(checkNotifications, 30000); 
 </script>
 </body>
 </html>
