@@ -1,6 +1,6 @@
 // --- VERSIE BEHEER ---
 // Pas dit nummer aan als je een update doet! (v1 -> v2)
-const CACHE_NAME = "dutch-open-lite-v1"; 
+const CACHE_NAME = "dutch-open-lite-v1.1"; 
 
 const urlsToCache = [
   "./",
