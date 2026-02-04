@@ -1,6 +1,6 @@
 // --- VERSIE BEHEER ---
-// HOOG DIT NUMMER OP BIJ ELKE UPDATE! (v7 -> v8)
-const CACHE_NAME = "dutch-open-v2.2.5"; 
+// Pas dit nummer aan als je een update doet! (v1 -> v2)
+const CACHE_NAME = "dutch-open-lite-v1"; 
 
 const urlsToCache = [
   "./",
@@ -11,9 +11,9 @@ const urlsToCache = [
   "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap"
 ];
 
-// Installeren
+// Installeren (Cache de basisbestanden)
 self.addEventListener("install", event => {
-  self.skipWaiting(); // Forceer directe activatie
+  self.skipWaiting(); 
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(urlsToCache);
@@ -21,7 +21,7 @@ self.addEventListener("install", event => {
   );
 });
 
-// Activeren en Oude Cache weggooien
+// Activeren (Oude versies opruimen)
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -34,10 +34,12 @@ self.addEventListener("activate", event => {
       );
     })
   );
-  return self.clients.claim(); // Neem direct controle over alle tabbladen
+  return self.clients.claim();
 });
 
-// Fetch Strategie: Netwerk eerst, dan Cache (voor live updates)
+// Fetch Strategie: NETWERK EERST, DAN CACHE
+// Dit is belangrijk voor een schema-app: hij probeert altijd de nieuwste versie te halen.
+// Lukt dat niet (geen internet)? Dan pakt hij de oude versie.
 self.addEventListener("fetch", event => {
   event.respondWith(
     fetch(event.request)
@@ -52,7 +54,7 @@ self.addEventListener("fetch", event => {
   );
 });
 
-// Luister naar berichten van de app
+// Luister naar het bericht "Update Nu" vanuit de app
 self.addEventListener('message', (event) => {
   if (event.data.action === 'skipWaiting') {
     self.skipWaiting();
