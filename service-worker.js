@@ -1,6 +1,6 @@
 // --- VERSIE BEHEER ---
 // HOOG DIT NUMMER OP BIJ ELKE UPDATE! (v7 -> v8)
-const CACHE_NAME = "dutch-open-v2.2.4"; 
+const CACHE_NAME = "dutch-open-v2.2.5"; 
 
 const urlsToCache = [
   "./",
