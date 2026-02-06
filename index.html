@@ -21,4 +21,249 @@
 
         /* HEADER & LOGO */
         .app-header { background: linear-gradient(to bottom, #1a1a1a, #0d0d0d); padding: 25px 20px 15px; text-align: center; border-bottom: 3px solid var(--primary); position: relative; z-index: 10; }
-        .logo-img { max-width: 240px; height: auto; display: block; margin: 0 auto 5px; filter: drop-shadow(0 0 10px rgba(255
+        .logo-img { max-width: 240px; height: auto; display: block; margin: 0 auto 5px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.1)); }
+        .subtitle { color: var(--primary); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; }
+
+        /* CONTENT CONTAINER */
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 80px; }
+        .welcome-card { background: rgba(255, 102, 0, 0.1); border: 1px solid rgba(255, 102, 0, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 25px; text-align: center; }
+
+        /* KNOPPEN */
+        .btn { display: block; width: 100%; padding: 20px; border: none; border-radius: 15px; font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.2rem; cursor: pointer; text-transform: uppercase; margin-bottom: 15px; position: relative; }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: var(--gradient); color: white; box-shadow: 0 8px 20px rgba(255, 102, 0, 0.3); }
+        .btn-secondary { background: #2C2C2C; color: white; font-size: 0.9rem; padding: 12px; border: 1px solid #444; }
+        .btn-date { display: block; font-size: 0.75rem; font-weight: 500; opacity: 0.9; margin-top: 5px; text-transform: none; }
+
+        /* ZOEKBALK */
+        .search-wrapper { position: relative; margin-bottom: 20px; }
+        input { width: 100%; padding: 18px; background: var(--card-bg); border: 2px solid #333; border-radius: 12px; color: white; font-size: 1.1rem; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        input:focus { outline: none; border-color: var(--primary); background: #252525; }
+
+        /* WEDSTRIJD KAART */
+        .match-card { background: var(--card-bg); border-radius: 12px; padding: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary); animation: slideUp 0.4s ease forwards; opacity: 0; }
+        .match-info strong { display: block; font-size: 1.15rem; margin-bottom: 4px; color: #fff; }
+        .match-info small { color: var(--primary); text-transform: uppercase; font-weight: 700; font-size: 0.8rem; }
+        .time-badge { background: #333; padding: 10px 15px; border-radius: 10px; font-weight: 900; color: #fff; font-size: 1.3rem; min-width: 60px; text-align: center; border: 1px solid #444; }
+
+        /* UTILS & ANIMATIES */
+        #game-screen, #start-screen { display: none; }
+        .empty-msg { text-align: center; color: #777; margin-top: 40px; font-style: italic; }
+        
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .match-card:nth-child(1) { animation-delay: 0.1s; } .match-card:nth-child(2) { animation-delay: 0.15s; } .match-card:nth-child(3) { animation-delay: 0.2s; }
+    </style>
+</head>
+<body>
+
+<div class="app-header">
+    <img src="https://dutchopendarts.nl/wp-content/uploads/2026/01/DOD_FCwitte-rand.png" alt="Dutch Open Logo" class="logo-img">
+    <div class="subtitle">Board-Time Tracker</div>
+</div>
+
+<div class="container">
+    
+    <div id="start-screen" style="display: block;">
+        
+        <div id="welcome-area"></div>
+
+        <p style="text-align:center; color:#777; margin-bottom:30px;">Toernooi selecteren:</p>
+        
+        <button class="btn btn-primary" onclick="startApp('koppels')">
+            Koppel Toernooi
+            <span class="btn-date" id="lbl-koppels">Laden...</span>
+        </button>
+        
+        <button class="btn btn-primary" onclick="startApp('singles')">
+            Single Toernooi
+            <span class="btn-date" id="lbl-singles">Laden...</span>
+        </button>
+
+        <p style="text-align:center; font-size:0.7em; color:#444; margin-top:40px;">Made for Champions 🏆</p>
+    </div>
+
+    <div id="game-screen">
+        <button class="btn btn-secondary" style="margin-bottom: 20px;" onclick="showStart()">⬅️ Terug naar Menu</button>
+
+        <h2 id="toernooi-titel" style="color:white; margin: 0; font-size:1.5rem;">Toernooi</h2>
+        <div id="toernooi-datum" style="color:var(--primary); font-size:0.9rem; margin-bottom:20px; font-weight:bold; text-transform:uppercase;">Datum</div>
+
+        <div class="search-wrapper">
+            <input type="text" id="searchInput" placeholder="🔍 Zoek op naam..." oninput="displayMatches()">
+        </div>
+
+        <div id="results"></div>
+    </div>
+</div>
+
+<script>
+    /* ================= 🛠️ INSTELLINGEN ================= */
+    const JAAR_INSTELLINGEN = {
+        jaar: 2026,
+        singles: { dag: 7, maand: 1 }, // 1 = Februari (0=Januari)
+        koppels: { dag: 6, maand: 1 }  // 1 = Februari
+    };
+
+    // ZET OP TRUE OM VANDAAG TE ZIEN WAT ER GEBEURT (testdata). 
+    // ZET OP FALSE VOOR HET ECHTE TOERNOOI!
+    const TEST_MODUS = false; 
+
+    const LINKS = {
+        singles: "https://docs.google.com/spreadsheets/d/e/2PACX-1vR07cDfS-1lYNnK_YQyrHsh5I87hge91ysmbW0flir6KopbHo2gJJULnr5wJVEV-p5ITvVMyGeoEjnb/pub?gid=0&single=true&output=csv",
+        koppels: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTTcjXCY04kDqiqOdqJIC8pa0qGTThV_R5SIUA-Hp994aYcehoiOsV9uu0T0rnRI7GxOOPY2FMfi9US/pub?gid=0&single=true&output=csv"
+    };
+
+    /* ================= 🚀 APP LOGICA ================= */
+    let allMatches = []; 
+    let currentFilter = null; 
+
+    const DATE_SINGLES = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.singles.maand, JAAR_INSTELLINGEN.singles.dag);
+    const DATE_KOPPELS = new Date(JAAR_INSTELLINGEN.jaar, JAAR_INSTELLINGEN.koppels.maand, JAAR_INSTELLINGEN.koppels.dag);
+
+    // Initialisatie bij laden pagina
+    document.addEventListener("DOMContentLoaded", () => {
+        // Zet datums in scherm
+        document.getElementById('lbl-singles').innerText = DATE_SINGLES.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
+        document.getElementById('lbl-koppels').innerText = DATE_KOPPELS.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long'});
+
+        showWelcome();
+        loadAllData(); // Direct laden
+    });
+
+    function showWelcome() {
+        const nu = new Date();
+        if (nu.getHours() >= 6 && nu.getHours() < 13) {
+            document.getElementById('welcome-area').innerHTML = `<div class="welcome-card"><div style="font-size:1.8rem;">🍻</div><strong>Goedemorgen strijders!</strong><br><span style="font-size:0.9rem; opacity:0.8;">Hoe is de kater? Drink genoeg water! 💧</span></div>`;
+        }
+    }
+
+    // WAKE-UP CALL: Verversen zodra app zichtbaar wordt
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            loadAllData();
+        }
+    });
+
+    // Haalt ZOWEL singles ALS koppels op
+    function loadAllData() {
+        let tempList = [];
+        let completed = 0;
+
+        const finish = () => {
+            completed++;
+            if(completed === 2) { 
+                allMatches = tempList;
+                displayMatches(); // Update scherm als je al aan het kijken bent
+            }
+        };
+
+        Papa.parse(LINKS.singles, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: function(results) { processRawData(results.data, 'singles', tempList); finish(); },
+            error: finish
+        });
+
+        Papa.parse(LINKS.koppels, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: function(results) { processRawData(results.data, 'koppels', tempList); finish(); },
+            error: finish
+        });
+    }
+
+    // Data verwerken
+    function processRawData(data, type, listToAddTo) {
+        data.forEach(row => {
+            const keys = Object.keys(row);
+            const naam = row[keys[0]]; 
+            if (!naam) return; 
+            keys.forEach((key, index) => {
+                if (index === 0) return; 
+                let tijdHeader = key; const bordNummer = row[key]; 
+                if ((tijdHeader.includes(":") || tijdHeader.includes(".")) && bordNummer && bordNummer.trim() !== "") {
+                    let cleanTime = tijdHeader.replace('.', ':');
+                    let parts = cleanTime.split(':');
+                    if(parts[0].length === 1) parts[0] = "0" + parts[0]; 
+                    if(parts[1].length === 1) parts[1] = "0" + parts[1]; 
+                    
+                    listToAddTo.push({ 
+                        speler: naam, 
+                        tijd: `${parts[0]}:${parts[1]}`, 
+                        bord: bordNummer,
+                        type: type 
+                    });
+                }
+            });
+        });
+    }
+
+    function startApp(type) {
+        currentFilter = type; 
+        let selectedDate = type === 'singles' ? DATE_SINGLES : DATE_KOPPELS;
+        let title = type === 'singles' ? "Single Toernooi" : "Koppel Toernooi";
+
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        document.getElementById('toernooi-titel').innerText = title;
+        document.getElementById('toernooi-datum').innerText = selectedDate.toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+        
+        displayMatches();
+    }
+
+    function showStart() {
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'block';
+        currentFilter = null;
+        document.getElementById('searchInput').value = "";
+    }
+
+    function displayMatches() {
+        if (!currentFilter) return;
+
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = "";
+
+        let viewList = allMatches.filter(m => m.type === currentFilter);
+
+        if(viewList.length === 0) { resultsDiv.innerHTML = "<div class='empty-msg'>Gegevens laden...</div>"; return; }
+
+        const nu = new Date();
+        const filtered = viewList.filter(match => {
+            let matchDate;
+            if (TEST_MODUS) {
+                matchDate = new Date();
+            } else {
+                matchDate = match.type === 'singles' ? new Date(DATE_SINGLES) : new Date(DATE_KOPPELS);
+            }
+
+            const [h, m] = match.tijd.split(':').map(Number);
+            matchDate.setHours(h, m, 0, 0);
+            const vervalTijd = new Date(matchDate.getTime() + 15 * 60000); 
+            
+            return match.speler.toLowerCase().includes(query) && nu < vervalTijd;
+        });
+
+        if(filtered.length === 0) {
+            resultsDiv.innerHTML = query.length > 0 ? "<div class='empty-msg'>Niet gevonden.</div>" : "<div class='empty-msg'>Alles gespeeld! Tijd voor bier. 🍺</div>";
+            return;
+        }
+
+        filtered.sort((a, b) => a.tijd.localeCompare(b.tijd));
+
+        filtered.forEach(match => {
+            resultsDiv.innerHTML += `
+                <div class="match-card">
+                    <div class="match-info">
+                        <strong>${match.speler}</strong>
+                        <small>Bord ${match.bord}</small>
+                    </div>
+                    <div class="time-badge">${match.tijd}</div>
+                </div>`;
+        });
+    }
+
+    // Refresh data elke 60 seconden automatisch
+    setInterval(loadAllData, 60000); 
+</script>
+</body>
+</html>
